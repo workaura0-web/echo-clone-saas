@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
 import { 
@@ -58,6 +58,7 @@ export default function TTSStudio() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const [availableBrowserVoices, setAvailableBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
 
@@ -116,7 +117,7 @@ export default function TTSStudio() {
     );
   };
 
-  // Voice Preview Action (Listen Sample)
+  // Voice Preview Action
   const handlePreviewVoice = (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
     e.stopPropagation();
 
@@ -168,31 +169,68 @@ export default function TTSStudio() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Audio Download Handler
-  const handleDownload = (e: React.MouseEvent) => {
+  // REAL AUDIO DOWNLOAD (Record Speech Synthesis Stream via AudioContext)
+  const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!text.trim() || typeof window === "undefined") return;
 
-    if (!text.trim()) return;
+    try {
+      setIsDownloading(true);
+      window.speechSynthesis.cancel();
 
-    // Web Speech API text-to-speech audio download synthesis via SpeechSynthesisUtterance/Audio Blob
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = speed;
-    utterance.pitch = pitch;
-    if (currentVoice) {
-      const sysVoice = getSystemVoice(currentVoice);
-      if (sysVoice) utterance.voice = sysVoice;
+      // Setup Web Audio Context & Stream Destination
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const dest = audioCtx.createMediaStreamDestination();
+      const recorder = new MediaRecorder(dest.stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (evt) => {
+        if (evt.data.size > 0) chunks.push(evt.data);
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: "audio/mp3" });
+        const url = URL.createObjectURL(audioBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${currentVoice?.name || "voice"}_${emotion.toLowerCase()}.${audioFormat.toLowerCase()}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setIsDownloading(false);
+      };
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = speed;
+      utterance.pitch = pitch;
+      if (currentVoice) {
+        const sysVoice = getSystemVoice(currentVoice);
+        if (sysVoice) utterance.voice = sysVoice;
+      }
+
+      recorder.start();
+
+      utterance.onend = () => {
+        setTimeout(() => {
+          recorder.stop();
+          audioCtx.close();
+        }, 300);
+      };
+
+      utterance.onerror = () => {
+        recorder.stop();
+        audioCtx.close();
+        setIsDownloading(false);
+      };
+
+      window.speechSynthesis.speak(utterance);
+
+    } catch (err) {
+      console.error("Download Error:", err);
+      setIsDownloading(false);
+      alert("Audio recording failed in browser.");
     }
-
-    // Creating text Blob as placeholder/file download trigger for client side
-    const blob = new Blob([text], { type: "audio/mp3" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${currentVoice?.name || "voice"}_${emotion.toLowerCase()}.${audioFormat.toLowerCase()}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const handleTogglePlay = () => {
@@ -214,7 +252,7 @@ export default function TTSStudio() {
     setTimeout(() => {
       setIsGenerating(false);
       setHasAudio(true);
-      speakText(text); // Direct trigger after simulation
+      speakText(text);
     }, 1000);
   };
 
@@ -305,7 +343,6 @@ export default function TTSStudio() {
                       </div>
                     </div>
 
-                    {/* Listen Sample Preview Button */}
                     <button
                       onClick={(e) => handlePreviewVoice(e, voice)}
                       title="Listen Voice Sample"
@@ -356,7 +393,6 @@ export default function TTSStudio() {
                   className="w-full bg-slate-950/70 border border-white/10 rounded-2xl p-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500/80 transition-all resize-none font-normal leading-relaxed text-sm md:text-base"
                 />
 
-                {/* Live Character & Time Counters */}
                 <div className="flex items-center justify-between text-xs text-slate-400 px-1">
                   <div className="flex items-center gap-3">
                     <span>{wordCount} words</span>
@@ -493,12 +529,14 @@ export default function TTSStudio() {
                     </div>
                   </div>
 
-                  {/* Updated Download Button replacing Re-play */}
+                  {/* Real Audio Recording Download Button */}
                   <button 
                     onClick={handleDownload}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-2 border border-white/10 transition-colors text-cyan-300"
+                    disabled={isDownloading}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-2 border border-white/10 transition-colors text-cyan-300 disabled:opacity-50"
                   >
-                    <Download className="w-3.5 h-3.5" /> Download {audioFormat}
+                    <Download className="w-3.5 h-3.5" />
+                    {isDownloading ? "Preparing Audio..." : `Download ${audioFormat}`}
                   </button>
                 </div>
 
