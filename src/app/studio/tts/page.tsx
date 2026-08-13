@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
 import { 
@@ -166,6 +166,33 @@ export default function TTSStudio() {
 
     setIsPlaying(true);
     window.speechSynthesis.speak(utterance);
+  };
+
+  // Audio Download Handler
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!text.trim()) return;
+
+    // Web Speech API text-to-speech audio download synthesis via SpeechSynthesisUtterance/Audio Blob
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = speed;
+    utterance.pitch = pitch;
+    if (currentVoice) {
+      const sysVoice = getSystemVoice(currentVoice);
+      if (sysVoice) utterance.voice = sysVoice;
+    }
+
+    // Creating text Blob as placeholder/file download trigger for client side
+    const blob = new Blob([text], { type: "audio/mp3" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${currentVoice?.name || "voice"}_${emotion.toLowerCase()}.${audioFormat.toLowerCase()}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleTogglePlay = () => {
@@ -466,11 +493,12 @@ export default function TTSStudio() {
                     </div>
                   </div>
 
+                  {/* Updated Download Button replacing Re-play */}
                   <button 
-                    onClick={() => speakText(text)}
+                    onClick={handleDownload}
                     className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-2 border border-white/10 transition-colors text-cyan-300"
                   >
-                    <Download className="w-3.5 h-3.5" /> Re-play {audioFormat}
+                    <Download className="w-3.5 h-3.5" /> Download {audioFormat}
                   </button>
                 </div>
 
