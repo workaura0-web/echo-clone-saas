@@ -91,7 +91,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Pricing Section */}
+        {/* Flexible Plans Section */}
         <div className="space-y-12">
           <div className="text-center space-y-2">
             <h2 className="text-2xl md:text-4xl font-black text-slate-100">Flexible Plans for Everyone</h2>
@@ -111,16 +111,13 @@ export default function Home() {
                   <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> MP3 Audio Downloads</li>
                 </ul>
               </div>
-              <Link href="/login" className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-center font-bold text-xs transition-colors">
-                Get Started
+              <Link href="/checkout?plan=free" className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-center font-bold text-xs transition-colors">
+                Get Plan
               </Link>
             </div>
 
-            {/* Pro Plan (Highlighted) */}
-            <div className="bg-slate-900/80 backdrop-blur-xl p-8 rounded-3xl border-2 border-purple-500 shadow-2xl shadow-purple-500/20 space-y-6 flex flex-col justify-between relative scale-[1.03]">
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-[10px] font-black uppercase tracking-wider text-white">
-                Most Popular
-              </span>
+            {/* Pro Plan */}
+            <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-3xl border border-purple-500/40 space-y-6 flex flex-col justify-between">
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-slate-100">Pro</h3>
                 <div className="text-4xl font-black text-purple-400">$19 <span className="text-xs font-normal text-slate-400">/mo</span></div>
@@ -131,8 +128,8 @@ export default function Home() {
                   <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Commercial Rights</li>
                 </ul>
               </div>
-              <Link href="/login" className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 text-center font-bold text-xs text-white shadow-lg shadow-purple-500/25 transition-all">
-                Upgrade to Pro
+              <Link href="/checkout?plan=pro" className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:scale-[1.01] active:scale-[0.99] text-center font-bold text-xs text-white shadow-lg shadow-purple-500/25 transition-all">
+                Get Plan
               </Link>
             </div>
 
@@ -147,8 +144,8 @@ export default function Home() {
                   <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Dedicated API Access</li>
                 </ul>
               </div>
-              <Link href="/login" className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-center font-bold text-xs transition-colors">
-                Contact Sales
+              <Link href="/checkout?plan=enterprise" className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-center font-bold text-xs transition-colors">
+                Get Plan
               </Link>
             </div>
 
@@ -162,7 +159,6 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500">© 2026 Echo Clone. All rights reserved.</p>
           
-          {/* Creator Credit */}
           <p className="text-xs text-slate-500 flex items-center gap-1 font-medium tracking-wide">
             made with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline" /> by <span className="text-slate-300 font-bold">ABM</span>
           </p>
