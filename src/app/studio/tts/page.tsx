@@ -17,24 +17,91 @@ import {
   FileText,
   Clock,
   Heart,
-  VolumeX
+  VolumeX,
+  Lock,
+  CheckCircle2
 } from "lucide-react";
 
-// 13 Enhanced AI Voice Presets with high-quality language matching
+// Distinct Voice Configurations with customized pitch, rate, and style modifiers
 const VOICES = [
-  { id: "v1", name: "Aria", gender: "Female", accent: "US English", lang: "en-US", style: "Warm & Friendly", color: "from-pink-500 to-rose-500", glow: "shadow-pink-500/20", sample: "Hello, I am Aria. How can I help you today?" },
-  { id: "v2", name: "Liam", gender: "Male", accent: "US English", lang: "en-US", style: "Deep & Energetic", color: "from-blue-500 to-indigo-500", glow: "shadow-blue-500/20", sample: "Hey there! I am Liam, ready to power your content." },
-  { id: "v3", name: "Sophia", gender: "Female", accent: "UK English", lang: "en-GB", style: "Professional", color: "from-purple-500 to-violet-500", glow: "shadow-purple-500/20", sample: "Good day. I am Sophia, bringing elegance to your narrative." },
-  { id: "v4", name: "Oliver", gender: "Male", accent: "UK English", lang: "en-GB", style: "Calm & Expressive", color: "from-emerald-500 to-teal-500", glow: "shadow-emerald-500/20", sample: "Hello, I am Oliver. Let's make something great together." },
-  { id: "v5", name: "Zoya", gender: "Female", accent: "Indian English", lang: "en-IN", style: "Natural & Clear", color: "from-amber-500 to-orange-500", glow: "shadow-amber-500/20", sample: "Namaste! I am Zoya, clear and expressive." },
-  { id: "v6", name: "Rohan", gender: "Male", accent: "Indian English", lang: "en-IN", style: "Confident & Friendly", color: "from-orange-500 to-amber-600", glow: "shadow-orange-500/20", sample: "Hello! I am Rohan, ready to help with your speech audio." },
-  { id: "v7", name: "Chloe", gender: "Female", accent: "French Accent", lang: "fr-FR", style: "Smooth & Soft", color: "from-fuchsia-500 to-pink-500", glow: "shadow-fuchsia-500/20", sample: "Bonjour, I am Chloe. Bringing a soft French voice to your project." },
-  { id: "v8", name: "Hans", gender: "Male", accent: "German Accent", lang: "de-DE", style: "Authoritative", color: "from-yellow-500 to-amber-600", glow: "shadow-yellow-500/20", sample: "Hallo, I am Hans. Clear and precise audio delivery." },
-  { id: "v9", name: "Mateo", gender: "Male", accent: "Spanish Accent", lang: "es-ES", style: "Lively & Upbeat", color: "from-cyan-500 to-blue-500", glow: "shadow-cyan-500/20", sample: "Hola! I am Mateo, ready to add life to your scripts." },
-  { id: "v10", name: "Elena", gender: "Female", accent: "Spanish Accent", lang: "es-ES", style: "Melodic & Warm", color: "from-rose-400 to-red-500", glow: "shadow-rose-500/20", sample: "Hola, I am Elena. Smooth and pleasant voice tone." },
-  { id: "v11", name: "Kai", gender: "Male", accent: "Japanese Accent", lang: "ja-JP", style: "Youthful Vlogger", color: "from-green-400 to-emerald-600", glow: "shadow-green-500/20", sample: "Konnichiwa! I am Kai, excited to read your scripts." },
-  { id: "v12", name: "Amara", gender: "Female", accent: "African Accent", lang: "en-ZA", style: "Rich Storyteller", color: "from-violet-600 to-indigo-600", glow: "shadow-violet-500/20", sample: "Greetings! I am Amara, ready to tell your story with deep tone." },
-  { id: "v13", name: "Sora", gender: "Female", accent: "Australian English", lang: "en-AU", style: "Bright & Casual", color: "from-teal-400 to-cyan-600", glow: "shadow-teal-500/20", sample: "G'day! I am Sora, bringing a refreshing Australian accent." },
+  { 
+    id: "v1", 
+    name: "Aria", 
+    gender: "Female", 
+    accent: "US English", 
+    lang: "en-US", 
+    style: "Warm & Gentle", 
+    color: "from-pink-500 to-rose-500", 
+    glow: "shadow-pink-500/20", 
+    sample: "Hello, I am Aria. Warm and gentle voice tone.",
+    basePitch: 1.3,
+    baseRate: 0.95
+  },
+  { 
+    id: "v2", 
+    name: "Liam", 
+    gender: "Male", 
+    accent: "US English", 
+    lang: "en-US", 
+    style: "Deep & Energetic", 
+    color: "from-blue-500 to-indigo-500", 
+    glow: "shadow-blue-500/20", 
+    sample: "Hey there! I am Liam, deep and energetic audio.",
+    basePitch: 0.7,
+    baseRate: 1.05
+  },
+  { 
+    id: "v3", 
+    name: "Sophia", 
+    gender: "Female", 
+    accent: "UK English", 
+    lang: "en-GB", 
+    style: "Crisp Professional", 
+    color: "from-purple-500 to-violet-500", 
+    glow: "shadow-purple-500/20", 
+    sample: "Good day. I am Sophia, professional narrative style.",
+    basePitch: 1.1,
+    baseRate: 0.90
+  },
+  { 
+    id: "v4", 
+    name: "Oliver", 
+    gender: "Male", 
+    accent: "UK English", 
+    lang: "en-GB", 
+    style: "Calm Storyteller", 
+    color: "from-emerald-500 to-teal-500", 
+    glow: "shadow-emerald-500/20", 
+    sample: "Hello, I am Oliver. Calm and expressive voice.",
+    basePitch: 0.8,
+    baseRate: 0.85
+  },
+  { 
+    id: "v5", 
+    name: "Zoya", 
+    gender: "Female", 
+    accent: "Indian Accent", 
+    lang: "en-IN", 
+    style: "Soft & Clear", 
+    color: "from-amber-500 to-orange-500", 
+    glow: "shadow-amber-500/20", 
+    sample: "Namaste! I am Zoya, expressive and soft.",
+    basePitch: 1.25,
+    baseRate: 1.0
+  },
+  { 
+    id: "v6", 
+    name: "Rohan", 
+    gender: "Male", 
+    accent: "Indian Accent", 
+    lang: "en-IN", 
+    style: "Fast & Confident", 
+    color: "from-orange-500 to-amber-600", 
+    glow: "shadow-orange-500/20", 
+    sample: "Hello! I am Rohan, clear and confident tone.",
+    basePitch: 0.85,
+    baseRate: 1.15
+  }
 ];
 
 const EMOTIONS = ["Neutral", "Excited", "Whispering", "Professional", "Dramatic"];
@@ -48,8 +115,13 @@ const SAMPLE_TEMPLATES = [
 
 export default function TTSStudio() {
   const router = useRouter();
-  const [loadingAuth, setLoadingAuth] = useState(true);
 
+  // User Profile & Limits State
+  const [user, setUser] = useState<any>(null);
+  const [isApproved, setIsApproved] = useState(false);
+  const [characterLimit, setCharacterLimit] = useState(100);
+
+  // Audio & Voice States
   const [selectedVoice, setSelectedVoice] = useState(VOICES[0].id);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
 
@@ -65,26 +137,40 @@ export default function TTSStudio() {
   const [generatedAudioBlob, setGeneratedAudioBlob] = useState<Blob | null>(null);
 
   const [availableBrowserVoices, setAvailableBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
+  // 1. Fetch User & Verify Approval Plan Limit from Supabase
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
+    const fetchUserAndStatus = async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        setUser(currentUser);
+
+        // Check if user is approved by Admin in profiles table
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("plan_status, is_approved")
+          .eq("id", currentUser.id)
+          .single();
+
+        const approved = profile?.plan_status === "approved" || profile?.is_approved === true;
+        setIsApproved(approved);
+        setCharacterLimit(approved ? 10000 : 100);
       } else {
-        setLoadingAuth(false);
+        setUser(null);
+        setIsApproved(false);
+        setCharacterLimit(100);
       }
     };
 
-    checkUser();
-  }, [router]);
+    fetchUserAndStatus();
+  }, []);
 
+  // 2. Load SpeechSynthesis Voices
   useEffect(() => {
     const loadVoices = () => {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        const voices = window.speechSynthesis.getVoices();
-        setAvailableBrowserVoices(voices);
+        setAvailableBrowserVoices(window.speechSynthesis.getVoices());
       }
     };
 
@@ -100,30 +186,32 @@ export default function TTSStudio() {
     };
   }, []);
 
-  const currentVoice = VOICES.find((v) => v.id === selectedVoice);
-  
+  const currentVoice = VOICES.find((v) => v.id === selectedVoice) || VOICES[0];
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const estimatedSeconds = Math.ceil(wordCount / 2.5); 
+  const estimatedSeconds = Math.ceil(wordCount / 2.5);
 
-  // Helper to pick best natural neural voice available on browser/OS
+  // Helper: Find matching gender & lang voice from browser engine
   const getSystemVoice = (voiceConfig: typeof VOICES[0]) => {
     if (!availableBrowserVoices.length) return null;
 
-    // Filter for Google/Natural/Microsoft/Apple Neural voices for non-robotic sound
-    const matches = availableBrowserVoices.filter((v) =>
+    const langMatches = availableBrowserVoices.filter((v) =>
       v.lang.toLowerCase().includes(voiceConfig.lang.slice(0, 2).toLowerCase())
     );
 
-    const naturalVoice = matches.find((v) =>
-      v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Online") || v.name.includes("Premium")
-    );
+    const isFemale = voiceConfig.gender === "Female";
+    const genderMatch = langMatches.find((v) => {
+      const name = v.name.toLowerCase();
+      return isFemale
+        ? name.includes("female") || name.includes("zira") || name.includes("samantha") || name.includes("aria") || name.includes("victoria")
+        : name.includes("male") || name.includes("david") || name.includes("george") || name.includes("mark") || name.includes("alex");
+    });
 
-    return naturalVoice || matches[0] || availableBrowserVoices[0];
+    return genderMatch || langMatches[0] || availableBrowserVoices[0];
   };
 
+  // Preview Voice Sample
   const handlePreviewVoice = (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
     e.stopPropagation();
-
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
     window.speechSynthesis.cancel();
@@ -134,8 +222,8 @@ export default function TTSStudio() {
     }
 
     const utterance = new SpeechSynthesisUtterance(voiceItem.sample);
-    utterance.rate = 1;
-    utterance.pitch = 1;
+    utterance.pitch = voiceItem.basePitch;
+    utterance.rate = voiceItem.baseRate;
 
     const sysVoice = getSystemVoice(voiceItem);
     if (sysVoice) utterance.voice = sysVoice;
@@ -147,12 +235,10 @@ export default function TTSStudio() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Update Supabase Used Characters count in Database
+  // Update Supabase Used Characters Count
   const updateUsedCharactersCount = async (charsUsed: number) => {
+    if (!user) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data: profile } = await supabase
         .from("profiles")
         .select("used_characters")
@@ -169,13 +255,20 @@ export default function TTSStudio() {
         })
         .eq("id", user.id);
     } catch (err) {
-      console.error("Failed to update character count:", err);
+      console.error("Failed updating DB character count:", err);
     }
   };
 
-  // Core Speech Generator with High-Quality Audio Encoding
+  // Audio Generation with Pitch/Speed Adjustments per Voice
   const handleGenerate = async () => {
     if (!text.trim()) return;
+
+    // Enforce Character Limits
+    if (text.length > characterLimit) {
+      alert(`Limit Exceeded! You can only generate up to ${characterLimit} characters.`);
+      return;
+    }
+
     setIsGenerating(true);
     setPreviewingVoiceId(null);
     setIsPlaying(false);
@@ -185,47 +278,31 @@ export default function TTSStudio() {
     }
 
     try {
-      // 1. Emotion & Pitch Tuning for Natural Flow
-      let pitchModifier = pitch;
-      let rateModifier = speed;
+      let finalPitch = currentVoice.basePitch * pitch;
+      let finalRate = currentVoice.baseRate * speed;
 
+      // Emotion adjustments
       if (emotion === "Excited") {
-        pitchModifier += 0.2;
-        rateModifier += 0.1;
+        finalPitch += 0.2;
+        finalRate += 0.15;
       } else if (emotion === "Whispering") {
-        pitchModifier -= 0.2;
-        rateModifier -= 0.15;
+        finalPitch -= 0.2;
+        finalRate -= 0.2;
       } else if (emotion === "Dramatic") {
-        rateModifier -= 0.2;
+        finalRate -= 0.25;
       }
 
-      // 2. Synthesize and store Audio Stream
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = Math.min(Math.max(rateModifier, 0.5), 2);
-      utterance.pitch = Math.min(Math.max(pitchModifier, 0.5), 1.8);
+      utterance.rate = Math.min(Math.max(finalRate, 0.5), 2);
+      utterance.pitch = Math.min(Math.max(finalPitch, 0.5), 1.8);
 
-      if (currentVoice) {
-        const sysVoice = getSystemVoice(currentVoice);
-        if (sysVoice) utterance.voice = sysVoice;
-      }
-
-      // Generate Playable Audio Blob (Fixes PC Playback Issue)
-      const mediaStreamDestination = new MediaStreamAudioDestinationNode(new AudioContext());
-      const recorder = new MediaRecorder(mediaStreamDestination.stream);
-      const audioChunks: Blob[] = [];
-
-      recorder.ondataavailable = (event) => audioChunks.push(event.data);
-      recorder.onstop = () => {
-        const mimeType = audioFormat === "WAV" ? "audio/wav" : "audio/mpeg";
-        const audioBlob = new Blob(audioChunks, { type: mimeType });
-        setGeneratedAudioBlob(audioBlob);
-      };
+      const sysVoice = getSystemVoice(currentVoice);
+      if (sysVoice) utterance.voice = sysVoice;
 
       utterance.onend = async () => {
         setIsPlaying(false);
         setIsGenerating(false);
         setHasAudio(true);
-        // Database count increment
         await updateUsedCharactersCount(text.length);
       };
 
@@ -236,10 +313,9 @@ export default function TTSStudio() {
 
       setIsGenerating(false);
       setHasAudio(true);
-      
-      // Auto Play & Update DB
-      window.speechSynthesis.speak(utterance);
       setIsPlaying(true);
+
+      window.speechSynthesis.speak(utterance);
       await updateUsedCharactersCount(text.length);
 
     } catch (err) {
@@ -256,13 +332,11 @@ export default function TTSStudio() {
       setIsPlaying(false);
     } else {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = speed;
-      utterance.pitch = pitch;
+      utterance.pitch = currentVoice.basePitch * pitch;
+      utterance.rate = currentVoice.baseRate * speed;
 
-      if (currentVoice) {
-        const sysVoice = getSystemVoice(currentVoice);
-        if (sysVoice) utterance.voice = sysVoice;
-      }
+      const sysVoice = getSystemVoice(currentVoice);
+      if (sysVoice) utterance.voice = sysVoice;
 
       utterance.onend = () => setIsPlaying(false);
       utterance.onerror = () => setIsPlaying(false);
@@ -272,30 +346,25 @@ export default function TTSStudio() {
     }
   };
 
-  // Fixed Download Logic (Plays smoothly on PC/Mobile)
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!text.trim() || typeof window === "undefined") return;
+    if (!text.trim()) return;
 
     try {
       setIsDownloading(true);
-
       const mimeType = audioFormat.toLowerCase() === "wav" ? "audio/wav" : "audio/mp3";
-      
-      // Create proper encoded audio blob for Windows/Mac media players
       const blobToDownload = generatedAudioBlob || new Blob([text], { type: mimeType });
       const url = URL.createObjectURL(blobToDownload);
-      
+
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${currentVoice?.name || "voice"}_audio.${audioFormat.toLowerCase()}`;
+      a.download = `${currentVoice.name}_speech.${audioFormat.toLowerCase()}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download Error:", err);
-      alert("Audio download failed.");
     } finally {
       setIsDownloading(false);
     }
@@ -308,54 +377,73 @@ export default function TTSStudio() {
     setText("");
     setHasAudio(false);
     setIsPlaying(false);
-    setPreviewingVoiceId(null);
-    setGeneratedAudioBlob(null);
   };
-
-  if (loadingAuth) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm">Authenticating TTS Studio access...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white relative flex flex-col justify-between overflow-hidden p-4 md:p-8 font-sans">
       
+      {/* Background Lights */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto w-full relative z-10 space-y-8">
         
+        {/* Header Title */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-cyan-500/10 border border-purple-500/30 text-xs font-semibold text-purple-300">
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Next-Gen AI Voice Studio
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" /> AI Voice Generator Studio
           </div>
           <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
             Echo Text-to-Speech
           </h1>
           <p className="text-slate-400 text-sm md:text-base max-w-xl mx-auto">
-            Create ultra-realistic AI voiceovers with pitch, emotion, and format controls up to 15k characters.
+            Convert text into realistic male and female voices with custom pitch and emotional expressions.
           </p>
+        </div>
+
+        {/* User Plan Status Notice Banner */}
+        <div className={`p-4 rounded-2xl border flex items-center justify-between backdrop-blur-xl ${
+          isApproved 
+            ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-200" 
+            : "bg-amber-950/40 border-amber-500/30 text-amber-200"
+        }`}>
+          <div className="flex items-center gap-3">
+            {isApproved ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Lock className="w-5 h-5 text-amber-400" />}
+            <div>
+              <p className="text-sm font-bold">
+                {isApproved ? "Approved Account Plan (10,000 Chars Limit)" : "Free / Demo Mode (100 Chars Limit)"}
+              </p>
+              <p className="text-xs opacity-80">
+                {isApproved 
+                  ? "Admin has approved your plan. You have full access to generate up to 10k characters per script." 
+                  : "Upgrade or request Admin approval to unlock 10,000 characters limit."}
+              </p>
+            </div>
+          </div>
+          {!isApproved && (
+            <button 
+              onClick={() => router.push("/dashboard")} 
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-all"
+            >
+              Upgrade Plan
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
+          {/* Left Column: Voice Presets */}
           <div className="lg:col-span-5 space-y-4 bg-slate-900/50 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <h2 className="text-base font-bold flex items-center gap-2 text-slate-100">
-                <Mic className="w-5 h-5 text-pink-400" /> Select AI Voice
+                <Mic className="w-5 h-5 text-pink-400" /> Distinct Voices (Male/Female)
               </h2>
               <span className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 font-medium">
-                13 Available
+                6 Custom Presets
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5 max-h-[560px] overflow-y-auto pr-1 custom-scrollbar">
+            <div className="grid grid-cols-1 gap-3 max-h-[520px] overflow-y-auto pr-1">
               {VOICES.map((voice) => {
                 const isSelected = selectedVoice === voice.id;
                 const isPreviewing = previewingVoiceId === voice.id;
@@ -377,7 +465,11 @@ export default function TTSStudio() {
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-100 text-sm">{voice.name}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                            voice.gender === "Female" 
+                              ? "bg-pink-500/20 text-pink-300 border-pink-500/30" 
+                              : "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                          }`}>
                             {voice.gender}
                           </span>
                         </div>
@@ -387,7 +479,6 @@ export default function TTSStudio() {
 
                     <button
                       onClick={(e) => handlePreviewVoice(e, voice)}
-                      title="Listen Voice Sample"
                       className={`p-2 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
                         isPreviewing 
                           ? "bg-purple-600 text-white animate-pulse" 
@@ -403,19 +494,20 @@ export default function TTSStudio() {
             </div>
           </div>
 
+          {/* Right Column: Text Input & Sound Controls */}
           <div className="lg:col-span-7 space-y-6">
             
             <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl space-y-5">
               
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 <span className="text-xs text-slate-400 font-semibold flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5 text-pink-400" /> Templates:
+                  <FileText className="w-3.5 h-3.5 text-pink-400" /> Sample Text:
                 </span>
                 {SAMPLE_TEMPLATES.map((tmpl, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setText(tmpl.text)}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-600/30 border border-white/10 text-slate-300 hover:text-purple-200 transition-colors whitespace-nowrap"
+                    onClick={() => setText(tmpl.text.slice(0, characterLimit))}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-600/30 border border-white/10 text-slate-300 transition-colors whitespace-nowrap"
                   >
                     {tmpl.label}
                   </button>
@@ -425,11 +517,11 @@ export default function TTSStudio() {
               <div className="space-y-2">
                 <textarea
                   value={text}
-                  maxLength={15000}
+                  maxLength={characterLimit}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Type or paste your script here (up to 15,000 characters)..."
+                  placeholder={`Type or paste script here (limit: ${characterLimit} characters)...`}
                   rows={8}
-                  className="w-full bg-slate-950/70 border border-white/10 rounded-2xl p-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500/80 transition-all resize-none font-normal leading-relaxed text-sm md:text-base"
+                  className="w-full bg-slate-950/70 border border-white/10 rounded-2xl p-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500/80 transition-all resize-none text-sm md:text-base"
                 />
 
                 <div className="flex items-center justify-between text-xs text-slate-400 px-1">
@@ -440,14 +532,14 @@ export default function TTSStudio() {
                       <Clock className="w-3 h-3 text-cyan-400" /> ~{estimatedSeconds}s audio
                     </span>
                   </div>
-                  <span className={text.length > 14000 ? "text-amber-400 font-bold" : "text-slate-500"}>
-                    {text.length.toLocaleString()} / 15,000 chars
+                  <span className={text.length >= characterLimit ? "text-amber-400 font-bold" : "text-slate-400"}>
+                    {text.length} / {characterLimit.toLocaleString()} chars
                   </span>
                 </div>
               </div>
 
+              {/* Pitch, Speed & Emotion Controls */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/5">
-                
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs font-medium text-slate-400">
                     <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-purple-400" /> Speed</span>
@@ -456,7 +548,7 @@ export default function TTSStudio() {
                   <input
                     type="range"
                     min="0.5"
-                    max="2"
+                    max="1.8"
                     step="0.1"
                     value={speed}
                     onChange={(e) => setSpeed(parseFloat(e.target.value))}
@@ -466,7 +558,7 @@ export default function TTSStudio() {
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs font-medium text-slate-400">
-                    <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-cyan-400" /> Pitch</span>
+                    <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-cyan-400" /> Pitch Adjust</span>
                     <span className="text-cyan-300 font-bold">{pitch}</span>
                   </div>
                   <input
@@ -482,7 +574,7 @@ export default function TTSStudio() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                    <Smile className="w-3.5 h-3.5 text-pink-400" /> Tone / Emotion
+                    <Smile className="w-3.5 h-3.5 text-pink-400" /> Tone / Expression
                   </label>
                   <select
                     value={emotion}
@@ -509,9 +601,9 @@ export default function TTSStudio() {
                     ))}
                   </select>
                 </div>
-
               </div>
 
+              {/* Submit Buttons */}
               <div className="flex items-center justify-between pt-2">
                 <button 
                   onClick={handleReset}
@@ -523,17 +615,17 @@ export default function TTSStudio() {
 
                 <button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !text.trim()}
+                  disabled={isGenerating || !text.trim() || text.length > characterLimit}
                   className={`px-7 py-3.5 rounded-2xl font-bold flex items-center gap-2.5 transition-all shadow-xl ${
-                    isGenerating || !text.trim()
+                    isGenerating || !text.trim() || text.length > characterLimit
                       ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:scale-[1.02] active:scale-[0.98] text-white shadow-purple-500/25"
+                      : "bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:scale-[1.02] text-white shadow-purple-500/25"
                   }`}
                 >
                   {isGenerating ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Generating Audio...
+                      Generating...
                     </>
                   ) : (
                     <>
@@ -545,45 +637,31 @@ export default function TTSStudio() {
 
             </div>
 
+            {/* Generated Audio Player */}
             {hasAudio && (
-              <div className="bg-slate-900/60 backdrop-blur-xl border border-purple-500/30 p-5 rounded-3xl shadow-xl space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
+              <div className="bg-slate-900/60 backdrop-blur-xl border border-purple-500/30 p-5 rounded-3xl shadow-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={handleTogglePlay}
-                      className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/30 hover:scale-105 transition-transform"
+                      className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg hover:scale-105 transition-transform"
                     >
                       {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white ml-0.5" />}
                     </button>
                     <div>
-                      <h4 className="font-bold text-sm text-slate-200">{currentVoice?.name} ({emotion} Tone)</h4>
-                      <p className="text-xs text-slate-400">{currentVoice?.accent} • {audioFormat} Format</p>
+                      <h4 className="font-bold text-sm text-slate-200">{currentVoice.name} ({currentVoice.gender})</h4>
+                      <p className="text-xs text-slate-400">{emotion} Tone • {audioFormat} Format</p>
                     </div>
                   </div>
 
                   <button 
                     onClick={handleDownload}
                     disabled={isDownloading}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-2 border border-white/10 transition-colors text-cyan-300 disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-2 border border-white/10 transition-colors text-cyan-300"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    {isDownloading ? "Preparing Audio..." : `Download ${audioFormat}`}
+                    {isDownloading ? "Preparing..." : `Download ${audioFormat}`}
                   </button>
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 h-10 px-4 bg-slate-950/60 rounded-xl border border-white/5">
-                  {[...Array(32)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-1 rounded-full bg-gradient-to-t from-pink-500 to-purple-400 transition-all duration-300 ${
-                        isPlaying ? "animate-pulse" : "h-2"
-                      }`}
-                      style={{
-                        height: isPlaying ? `${Math.floor(Math.random() * 28) + 8}px` : "6px",
-                        animationDelay: `${i * 0.05}s`
-                      }}
-                    />
-                  ))}
                 </div>
               </div>
             )}
