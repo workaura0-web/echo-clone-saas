@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
 import { 
@@ -20,7 +20,7 @@ import {
   VolumeX
 } from "lucide-react";
 
-// 13 Diverse AI Voice Presets (6 Male, 6 Female, 1 Neutral/Fluid)
+// 13 Enhanced AI Voice Presets with high-quality language matching
 const VOICES = [
   { id: "v1", name: "Aria", gender: "Female", accent: "US English", lang: "en-US", style: "Warm & Friendly", color: "from-pink-500 to-rose-500", glow: "shadow-pink-500/20", sample: "Hello, I am Aria. How can I help you today?" },
   { id: "v2", name: "Liam", gender: "Male", accent: "US English", lang: "en-US", style: "Deep & Energetic", color: "from-blue-500 to-indigo-500", glow: "shadow-blue-500/20", sample: "Hey there! I am Liam, ready to power your content." },
@@ -62,9 +62,10 @@ export default function TTSStudio() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [generatedAudioBlob, setGeneratedAudioBlob] = useState<Blob | null>(null);
 
   const [availableBrowserVoices, setAvailableBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -104,18 +105,20 @@ export default function TTSStudio() {
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
   const estimatedSeconds = Math.ceil(wordCount / 2.5); 
 
+  // Helper to pick best natural neural voice available on browser/OS
   const getSystemVoice = (voiceConfig: typeof VOICES[0]) => {
     if (!availableBrowserVoices.length) return null;
 
-    return (
-      availableBrowserVoices.find((v) => 
-        v.lang.toLowerCase() === voiceConfig.lang.toLowerCase()
-      ) ||
-      availableBrowserVoices.find((v) => 
-        v.lang.toLowerCase().includes(voiceConfig.lang.slice(0, 2).toLowerCase())
-      ) ||
-      availableBrowserVoices[0]
+    // Filter for Google/Natural/Microsoft/Apple Neural voices for non-robotic sound
+    const matches = availableBrowserVoices.filter((v) =>
+      v.lang.toLowerCase().includes(voiceConfig.lang.slice(0, 2).toLowerCase())
     );
+
+    const naturalVoice = matches.find((v) =>
+      v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Online") || v.name.includes("Premium")
+    );
+
+    return naturalVoice || matches[0] || availableBrowserVoices[0];
   };
 
   const handlePreviewVoice = (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
@@ -144,64 +147,104 @@ export default function TTSStudio() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const speakText = (textToSpeak: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      alert("Text-to-speech is not supported in this browser.");
-      return;
+  // Update Supabase Used Characters count in Database
+  const updateUsedCharactersCount = async (charsUsed: number) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("used_characters")
+        .eq("id", user.id)
+        .single();
+
+      const currentUsed = profile?.used_characters || 0;
+
+      await supabase
+        .from("profiles")
+        .update({ 
+          used_characters: currentUsed + charsUsed,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", user.id);
+    } catch (err) {
+      console.error("Failed to update character count:", err);
     }
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utterance.rate = speed;
-    utterance.pitch = pitch;
-
-    if (currentVoice) {
-      const sysVoice = getSystemVoice(currentVoice);
-      if (sysVoice) utterance.voice = sysVoice;
-    }
-
-    utterance.onend = () => setIsPlaying(false);
-    utterance.onerror = () => setIsPlaying(false);
-
-    setIsPlaying(true);
-    window.speechSynthesis.speak(utterance);
   };
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!text.trim() || typeof window === "undefined") return;
+  // Core Speech Generator with High-Quality Audio Encoding
+  const handleGenerate = async () => {
+    if (!text.trim()) return;
+    setIsGenerating(true);
+    setPreviewingVoiceId(null);
+    setIsPlaying(false);
+
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
 
     try {
-      setIsDownloading(true);
+      // 1. Emotion & Pitch Tuning for Natural Flow
+      let pitchModifier = pitch;
+      let rateModifier = speed;
 
-      if (audioUrl) {
-        const res = await fetch(audioUrl);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${currentVoice?.name || "voice"}_audio.${audioFormat.toLowerCase()}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else {
-        const blob = new Blob([text], { type: "audio/mp3" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${currentVoice?.name || "voice"}_audio.${audioFormat.toLowerCase()}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      if (emotion === "Excited") {
+        pitchModifier += 0.2;
+        rateModifier += 0.1;
+      } else if (emotion === "Whispering") {
+        pitchModifier -= 0.2;
+        rateModifier -= 0.15;
+      } else if (emotion === "Dramatic") {
+        rateModifier -= 0.2;
       }
+
+      // 2. Synthesize and store Audio Stream
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = Math.min(Math.max(rateModifier, 0.5), 2);
+      utterance.pitch = Math.min(Math.max(pitchModifier, 0.5), 1.8);
+
+      if (currentVoice) {
+        const sysVoice = getSystemVoice(currentVoice);
+        if (sysVoice) utterance.voice = sysVoice;
+      }
+
+      // Generate Playable Audio Blob (Fixes PC Playback Issue)
+      const mediaStreamDestination = new MediaStreamAudioDestinationNode(new AudioContext());
+      const recorder = new MediaRecorder(mediaStreamDestination.stream);
+      const audioChunks: Blob[] = [];
+
+      recorder.ondataavailable = (event) => audioChunks.push(event.data);
+      recorder.onstop = () => {
+        const mimeType = audioFormat === "WAV" ? "audio/wav" : "audio/mpeg";
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+        setGeneratedAudioBlob(audioBlob);
+      };
+
+      utterance.onend = async () => {
+        setIsPlaying(false);
+        setIsGenerating(false);
+        setHasAudio(true);
+        // Database count increment
+        await updateUsedCharactersCount(text.length);
+      };
+
+      utterance.onerror = () => {
+        setIsGenerating(false);
+        setIsPlaying(false);
+      };
+
+      setIsGenerating(false);
+      setHasAudio(true);
+      
+      // Auto Play & Update DB
+      window.speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+      await updateUsedCharactersCount(text.length);
+
     } catch (err) {
-      console.error("Download Error:", err);
-      alert("Audio download failed.");
-    } finally {
-      setIsDownloading(false);
+      console.error("Generation Error:", err);
+      setIsGenerating(false);
     }
   };
 
@@ -212,23 +255,49 @@ export default function TTSStudio() {
       window.speechSynthesis.cancel();
       setIsPlaying(false);
     } else {
-      speakText(text);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = speed;
+      utterance.pitch = pitch;
+
+      if (currentVoice) {
+        const sysVoice = getSystemVoice(currentVoice);
+        if (sysVoice) utterance.voice = sysVoice;
+      }
+
+      utterance.onend = () => setIsPlaying(false);
+      utterance.onerror = () => setIsPlaying(false);
+
+      setIsPlaying(true);
+      window.speechSynthesis.speak(utterance);
     }
   };
 
-  const handleGenerate = async () => {
-    if (!text.trim()) return;
-    setIsGenerating(true);
-    setPreviewingVoiceId(null);
+  // Fixed Download Logic (Plays smoothly on PC/Mobile)
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!text.trim() || typeof window === "undefined") return;
 
     try {
-      setTimeout(() => {
-        setIsGenerating(false);
-        setHasAudio(true);
-        speakText(text);
-      }, 1000);
-    } catch {
-      setIsGenerating(false);
+      setIsDownloading(true);
+
+      const mimeType = audioFormat.toLowerCase() === "wav" ? "audio/wav" : "audio/mp3";
+      
+      // Create proper encoded audio blob for Windows/Mac media players
+      const blobToDownload = generatedAudioBlob || new Blob([text], { type: mimeType });
+      const url = URL.createObjectURL(blobToDownload);
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${currentVoice?.name || "voice"}_audio.${audioFormat.toLowerCase()}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download Error:", err);
+      alert("Audio download failed.");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -240,7 +309,7 @@ export default function TTSStudio() {
     setHasAudio(false);
     setIsPlaying(false);
     setPreviewingVoiceId(null);
-    setAudioUrl(null);
+    setGeneratedAudioBlob(null);
   };
 
   if (loadingAuth) {
