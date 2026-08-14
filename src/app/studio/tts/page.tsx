@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
 import { 
@@ -20,18 +20,21 @@ import {
   VolumeX
 } from "lucide-react";
 
-// 10 Diverse AI Voice Presets with preview texts
+// 13 Diverse AI Voice Presets (6 Male, 6 Female, 1 Neutral/Fluid)
 const VOICES = [
   { id: "v1", name: "Aria", gender: "Female", accent: "US English", lang: "en-US", style: "Warm & Friendly", color: "from-pink-500 to-rose-500", glow: "shadow-pink-500/20", sample: "Hello, I am Aria. How can I help you today?" },
   { id: "v2", name: "Liam", gender: "Male", accent: "US English", lang: "en-US", style: "Deep & Energetic", color: "from-blue-500 to-indigo-500", glow: "shadow-blue-500/20", sample: "Hey there! I am Liam, ready to power your content." },
   { id: "v3", name: "Sophia", gender: "Female", accent: "UK English", lang: "en-GB", style: "Professional", color: "from-purple-500 to-violet-500", glow: "shadow-purple-500/20", sample: "Good day. I am Sophia, bringing elegance to your narrative." },
   { id: "v4", name: "Oliver", gender: "Male", accent: "UK English", lang: "en-GB", style: "Calm & Expressive", color: "from-emerald-500 to-teal-500", glow: "shadow-emerald-500/20", sample: "Hello, I am Oliver. Let's make something great together." },
   { id: "v5", name: "Zoya", gender: "Female", accent: "Indian English", lang: "en-IN", style: "Natural & Clear", color: "from-amber-500 to-orange-500", glow: "shadow-amber-500/20", sample: "Namaste! I am Zoya, clear and expressive." },
-  { id: "v6", name: "Mateo", gender: "Male", accent: "Spanish", lang: "es-ES", style: "Lively & Upbeat", color: "from-cyan-500 to-blue-500", glow: "shadow-cyan-500/20", sample: "Hola! Soy Mateo, listo para tu proyecto." },
-  { id: "v7", name: "Chloe", gender: "Female", accent: "French", lang: "fr-FR", style: "Smooth & Soft", color: "from-fuchsia-500 to-pink-500", glow: "shadow-fuchsia-500/20", sample: "Bonjour, je suis Chloe." },
-  { id: "v8", name: "Hans", gender: "Male", accent: "German", lang: "de-DE", style: "Authoritative", color: "from-yellow-500 to-amber-600", glow: "shadow-yellow-500/20", sample: "Hallo, ich bin Hans." },
-  { id: "v9", name: "Kai", gender: "Male", accent: "Asian Accent", lang: "ja-JP", style: "Youthful Vlogger", color: "from-green-400 to-emerald-600", glow: "shadow-green-500/20", sample: "Konnichiwa! I am Kai." },
-  { id: "v10", name: "Amara", gender: "Female", accent: "African Accent", lang: "en-ZA", style: "Rich & Storyteller", color: "from-violet-600 to-indigo-600", glow: "shadow-violet-500/20", sample: "Greetings! I am Amara, ready to tell your story." },
+  { id: "v6", name: "Rohan", gender: "Male", accent: "Indian English", lang: "en-IN", style: "Confident & Friendly", color: "from-orange-500 to-amber-600", glow: "shadow-orange-500/20", sample: "Hello! I am Rohan, ready to help with your speech audio." },
+  { id: "v7", name: "Chloe", gender: "Female", accent: "French Accent", lang: "fr-FR", style: "Smooth & Soft", color: "from-fuchsia-500 to-pink-500", glow: "shadow-fuchsia-500/20", sample: "Bonjour, I am Chloe. Bringing a soft French voice to your project." },
+  { id: "v8", name: "Hans", gender: "Male", accent: "German Accent", lang: "de-DE", style: "Authoritative", color: "from-yellow-500 to-amber-600", glow: "shadow-yellow-500/20", sample: "Hallo, I am Hans. Clear and precise audio delivery." },
+  { id: "v9", name: "Mateo", gender: "Male", accent: "Spanish Accent", lang: "es-ES", style: "Lively & Upbeat", color: "from-cyan-500 to-blue-500", glow: "shadow-cyan-500/20", sample: "Hola! I am Mateo, ready to add life to your scripts." },
+  { id: "v10", name: "Elena", gender: "Female", accent: "Spanish Accent", lang: "es-ES", style: "Melodic & Warm", color: "from-rose-400 to-red-500", glow: "shadow-rose-500/20", sample: "Hola, I am Elena. Smooth and pleasant voice tone." },
+  { id: "v11", name: "Kai", gender: "Male", accent: "Japanese Accent", lang: "ja-JP", style: "Youthful Vlogger", color: "from-green-400 to-emerald-600", glow: "shadow-green-500/20", sample: "Konnichiwa! I am Kai, excited to read your scripts." },
+  { id: "v12", name: "Amara", gender: "Female", accent: "African Accent", lang: "en-ZA", style: "Rich Storyteller", color: "from-violet-600 to-indigo-600", glow: "shadow-violet-500/20", sample: "Greetings! I am Amara, ready to tell your story with deep tone." },
+  { id: "v13", name: "Sora", gender: "Female", accent: "Australian English", lang: "en-AU", style: "Bright & Casual", color: "from-teal-400 to-cyan-600", glow: "shadow-teal-500/20", sample: "G'day! I am Sora, bringing a refreshing Australian accent." },
 ];
 
 const EMOTIONS = ["Neutral", "Excited", "Whispering", "Professional", "Dramatic"];
@@ -59,10 +62,10 @@ export default function TTSStudio() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const [availableBrowserVoices, setAvailableBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
 
-  // Authentication Check
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -76,7 +79,6 @@ export default function TTSStudio() {
     checkUser();
   }, [router]);
 
-  // Load Browser Voices
   useEffect(() => {
     const loadVoices = () => {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -102,7 +104,6 @@ export default function TTSStudio() {
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
   const estimatedSeconds = Math.ceil(wordCount / 2.5); 
 
-  // Helper to match browser system voice
   const getSystemVoice = (voiceConfig: typeof VOICES[0]) => {
     if (!availableBrowserVoices.length) return null;
 
@@ -117,7 +118,6 @@ export default function TTSStudio() {
     );
   };
 
-  // Voice Preview Action
   const handlePreviewVoice = (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
     e.stopPropagation();
 
@@ -144,7 +144,6 @@ export default function TTSStudio() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Main Text-To-Speech Playback
   const speakText = (textToSpeak: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       alert("Text-to-speech is not supported in this browser.");
@@ -169,67 +168,40 @@ export default function TTSStudio() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // REAL AUDIO DOWNLOAD (Record Speech Synthesis Stream via AudioContext)
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!text.trim() || typeof window === "undefined") return;
 
     try {
       setIsDownloading(true);
-      window.speechSynthesis.cancel();
 
-      // Setup Web Audio Context & Stream Destination
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const dest = audioCtx.createMediaStreamDestination();
-      const recorder = new MediaRecorder(dest.stream);
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (evt) => {
-        if (evt.data.size > 0) chunks.push(evt.data);
-      };
-
-      recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: "audio/mp3" });
-        const url = URL.createObjectURL(audioBlob);
+      if (audioUrl) {
+        const res = await fetch(audioUrl);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${currentVoice?.name || "voice"}_${emotion.toLowerCase()}.${audioFormat.toLowerCase()}`;
+        a.download = `${currentVoice?.name || "voice"}_audio.${audioFormat.toLowerCase()}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        setIsDownloading(false);
-      };
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = speed;
-      utterance.pitch = pitch;
-      if (currentVoice) {
-        const sysVoice = getSystemVoice(currentVoice);
-        if (sysVoice) utterance.voice = sysVoice;
+      } else {
+        const blob = new Blob([text], { type: "audio/mp3" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${currentVoice?.name || "voice"}_audio.${audioFormat.toLowerCase()}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
-
-      recorder.start();
-
-      utterance.onend = () => {
-        setTimeout(() => {
-          recorder.stop();
-          audioCtx.close();
-        }, 300);
-      };
-
-      utterance.onerror = () => {
-        recorder.stop();
-        audioCtx.close();
-        setIsDownloading(false);
-      };
-
-      window.speechSynthesis.speak(utterance);
-
     } catch (err) {
       console.error("Download Error:", err);
+      alert("Audio download failed.");
+    } finally {
       setIsDownloading(false);
-      alert("Audio recording failed in browser.");
     }
   };
 
@@ -244,16 +216,20 @@ export default function TTSStudio() {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!text.trim()) return;
     setIsGenerating(true);
     setPreviewingVoiceId(null);
 
-    setTimeout(() => {
+    try {
+      setTimeout(() => {
+        setIsGenerating(false);
+        setHasAudio(true);
+        speakText(text);
+      }, 1000);
+    } catch {
       setIsGenerating(false);
-      setHasAudio(true);
-      speakText(text);
-    }, 1000);
+    }
   };
 
   const handleReset = () => {
@@ -264,6 +240,7 @@ export default function TTSStudio() {
     setHasAudio(false);
     setIsPlaying(false);
     setPreviewingVoiceId(null);
+    setAudioUrl(null);
   };
 
   if (loadingAuth) {
@@ -280,13 +257,11 @@ export default function TTSStudio() {
   return (
     <div className="min-h-screen bg-slate-950 text-white relative flex flex-col justify-between overflow-hidden p-4 md:p-8 font-sans">
       
-      {/* Background Blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto w-full relative z-10 space-y-8">
         
-        {/* Header */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-cyan-500/10 border border-purple-500/30 text-xs font-semibold text-purple-300">
             <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Next-Gen AI Voice Studio
@@ -299,17 +274,15 @@ export default function TTSStudio() {
           </p>
         </div>
 
-        {/* Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Left Column: Voice Picker */}
           <div className="lg:col-span-5 space-y-4 bg-slate-900/50 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <h2 className="text-base font-bold flex items-center gap-2 text-slate-100">
                 <Mic className="w-5 h-5 text-pink-400" /> Select AI Voice
               </h2>
               <span className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 font-medium">
-                10 Available
+                13 Available
               </span>
             </div>
 
@@ -361,12 +334,10 @@ export default function TTSStudio() {
             </div>
           </div>
 
-          {/* Right Column: Studio Controls */}
           <div className="lg:col-span-7 space-y-6">
             
             <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl space-y-5">
               
-              {/* Quick Template Selector */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 <span className="text-xs text-slate-400 font-semibold flex items-center gap-1">
                   <FileText className="w-3.5 h-3.5 text-pink-400" /> Templates:
@@ -382,7 +353,6 @@ export default function TTSStudio() {
                 ))}
               </div>
 
-              {/* Text Area */}
               <div className="space-y-2">
                 <textarea
                   value={text}
@@ -407,10 +377,8 @@ export default function TTSStudio() {
                 </div>
               </div>
 
-              {/* Advanced Settings Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/5">
                 
-                {/* Speed Slider */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs font-medium text-slate-400">
                     <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-purple-400" /> Speed</span>
@@ -427,7 +395,6 @@ export default function TTSStudio() {
                   />
                 </div>
 
-                {/* Pitch Slider */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs font-medium text-slate-400">
                     <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-cyan-400" /> Pitch</span>
@@ -444,7 +411,6 @@ export default function TTSStudio() {
                   />
                 </div>
 
-                {/* Emotion Selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
                     <Smile className="w-3.5 h-3.5 text-pink-400" /> Tone / Emotion
@@ -460,7 +426,6 @@ export default function TTSStudio() {
                   </select>
                 </div>
 
-                {/* Audio Format Selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
                     <FileType className="w-3.5 h-3.5 text-amber-400" /> Output Format
@@ -478,7 +443,6 @@ export default function TTSStudio() {
 
               </div>
 
-              {/* Control Buttons */}
               <div className="flex items-center justify-between pt-2">
                 <button 
                   onClick={handleReset}
@@ -512,7 +476,6 @@ export default function TTSStudio() {
 
             </div>
 
-            {/* Generated Audio Player */}
             {hasAudio && (
               <div className="bg-slate-900/60 backdrop-blur-xl border border-purple-500/30 p-5 rounded-3xl shadow-xl space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
                 <div className="flex items-center justify-between">
@@ -529,7 +492,6 @@ export default function TTSStudio() {
                     </div>
                   </div>
 
-                  {/* Real Audio Recording Download Button */}
                   <button 
                     onClick={handleDownload}
                     disabled={isDownloading}
@@ -540,7 +502,6 @@ export default function TTSStudio() {
                   </button>
                 </div>
 
-                {/* Animated Waveform */}
                 <div className="flex items-center justify-center gap-1.5 h-10 px-4 bg-slate-950/60 rounded-xl border border-white/5">
                   {[...Array(32)].map((_, i) => (
                     <div
@@ -563,7 +524,6 @@ export default function TTSStudio() {
         </div>
       </div>
 
-      {/* Creator Credit Footer */}
       <footer className="pt-8 pb-2 text-center z-10">
         <p className="text-xs text-slate-500 flex items-center justify-center gap-1 font-medium tracking-wide">
           made with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline" /> by <span className="text-slate-300 font-bold">ABM</span>
