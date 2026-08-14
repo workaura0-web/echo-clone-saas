@@ -1,0 +1,202 @@
+"use client";
+
+import Link from "next/link";
+import { 
+  Sparkles, 
+  ArrowRight, 
+  Zap, 
+  ShieldCheck, 
+  Mic, 
+  Check, 
+  Heart
+} from "lucide-react";
+
+export default function Home() {
+  return (
+    <div className="min-h-screen bg-slate-950 text-white relative flex flex-col justify-between overflow-hidden font-sans">
+      
+      {/* Background Glowing Ambient Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-[40%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[30%] w-[400px] h-[400px] bg-pink-600/15 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* Navigation Header */}
+      <header className="relative z-10 border-b border-white/10 backdrop-blur-xl bg-slate-950/40 sticky top-0">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 font-black text-xl tracking-tight">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
+              <Mic className="w-5 h-5" />
+            </div>
+            <span className="bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">
+              Echo Clone
+            </span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-300">
+            <Link href="/" className="text-purple-400">Home</Link>
+            <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+            <Link href="/library" className="hover:text-white transition-colors">Library</Link>
+            <Link href="/login" className="hover:text-white transition-colors">Login</Link>
+          </nav>
+
+          <Link
+            href="/studio/tts"
+            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:scale-105 active:scale-95 text-white shadow-lg shadow-purple-500/25 transition-all"
+          >
+            Create Voice
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-20 space-y-24">
+        
+        {/* Hero Section */}
+        <div className="text-center space-y-6 max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-purple-500/30 text-xs font-medium text-purple-300 backdrop-blur-md shadow-inner">
+            <Sparkles className="w-4 h-4 text-pink-400" /> Next-Gen AI Voice Cloning & Speech Synthesis
+          </div>
+
+          <h1 className="text-4xl md:text-7xl font-black tracking-tight leading-tight">
+            Transform Your Text into{" "}
+            <span className="bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">
+              Hyper-Realistic
+            </span>{" "}
+            AI Voices
+          </h1>
+
+          <p className="text-slate-400 text-sm md:text-lg max-w-2xl mx-auto leading-relaxed">
+            Create natural voiceovers in seconds or clone your own voice using state-of-the-art neural audio networks.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <Link
+              href="/studio/tts"
+              className="px-7 py-3.5 rounded-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:scale-[1.02] active:scale-[0.98] text-white text-sm flex items-center gap-2 shadow-xl shadow-purple-500/25 transition-all"
+            >
+              Start <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/library"
+              className="px-7 py-3.5 rounded-2xl font-semibold bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-sm border border-white/10 backdrop-blur-md transition-all"
+            >
+              Explore Samples
+            </Link>
+          </div>
+        </div>
+
+        {/* Features Section */}
+        <div className="space-y-12">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl md:text-4xl font-black text-slate-100">Why Choose Echo Clone?</h2>
+            <p className="text-slate-400 text-xs md:text-sm">Everything you need to produce studio-grade audio content effortlessly.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl space-y-3 hover:border-purple-500/40 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-pink-500/10 text-pink-400 border border-pink-500/20 flex items-center justify-center">
+                <Mic className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-100">Instant Voice Cloning</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">Upload a short audio sample of any voice and generate endless speech in that exact tone.</p>
+            </div>
+
+            <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl space-y-3 hover:border-purple-500/40 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-100">Ultra-Fast Generation</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">Real-time processing powered by high-speed neural networks delivers speech in milliseconds.</p>
+            </div>
+
+            <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl space-y-3 hover:border-purple-500/40 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-100">Enterprise Security</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">Your uploaded voices and generated audio content are protected with strict encryption protocols.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pricing Section */}
+        <div className="space-y-12">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl md:text-4xl font-black text-slate-100">Flexible Plans for Everyone</h2>
+            <p className="text-slate-400 text-xs md:text-sm">Start free and upgrade as your voice generation needs grow.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Free Plan */}
+            <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-3xl border border-white/10 space-y-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-slate-200">Free</h3>
+                <div className="text-4xl font-black">$0 <span className="text-xs font-normal text-slate-500">/mo</span></div>
+                <ul className="space-y-2 text-xs text-slate-400">
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 10,000 Characters / mo</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Access to Standard Voices</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> MP3 Audio Downloads</li>
+                </ul>
+              </div>
+              <Link href="/login" className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-center font-bold text-xs transition-colors">
+                Get Started
+              </Link>
+            </div>
+
+            {/* Pro Plan (Highlighted) */}
+            <div className="bg-slate-900/80 backdrop-blur-xl p-8 rounded-3xl border-2 border-purple-500 shadow-2xl shadow-purple-500/20 space-y-6 flex flex-col justify-between relative scale-[1.03]">
+              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-[10px] font-black uppercase tracking-wider text-white">
+                Most Popular
+              </span>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-slate-100">Pro</h3>
+                <div className="text-4xl font-black text-purple-400">$19 <span className="text-xs font-normal text-slate-400">/mo</span></div>
+                <ul className="space-y-2 text-xs text-slate-300">
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 100,000 Characters / mo</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 5 Instant Voice Clones</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> High-Quality Audio Export</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Commercial Rights</li>
+                </ul>
+              </div>
+              <Link href="/login" className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 text-center font-bold text-xs text-white shadow-lg shadow-purple-500/25 transition-all">
+                Upgrade to Pro
+              </Link>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-3xl border border-white/10 space-y-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-slate-200">Enterprise</h3>
+                <div className="text-4xl font-black">$99 <span className="text-xs font-normal text-slate-500">/mo</span></div>
+                <ul className="space-y-2 text-xs text-slate-400">
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited Characters</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited Voice Clones</li>
+                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Dedicated API Access</li>
+                </ul>
+              </div>
+              <Link href="/login" className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-center font-bold text-xs transition-colors">
+                Contact Sales
+              </Link>
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+
+      {/* Footer Section */}
+      <footer className="relative z-10 border-t border-white/10 py-8 bg-slate-950/60 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-slate-500">© 2026 Echo Clone. All rights reserved.</p>
+          
+          {/* Creator Credit */}
+          <p className="text-xs text-slate-500 flex items-center gap-1 font-medium tracking-wide">
+            made with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline" /> by <span className="text-slate-300 font-bold">ABM</span>
+          </p>
+        </div>
+      </footer>
+
+    </div>
+  );
+}
