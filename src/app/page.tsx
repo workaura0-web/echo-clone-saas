@@ -20,39 +20,11 @@ export default function Home() {
       <div className="absolute top-[40%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[30%] w-[400px] h-[400px] bg-pink-600/15 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Navigation Header */}
-      <header className="relative z-10 border-b border-white/10 backdrop-blur-xl bg-slate-950/40 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl tracking-tight">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
-              <Mic className="w-5 h-5" />
-            </div>
-            <span className="bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">
-              Echo Clone
-            </span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-300">
-            <Link href="/" className="text-purple-400">Home</Link>
-            <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
-            <Link href="/library" className="hover:text-white transition-colors">Library</Link>
-            <Link href="/login" className="hover:text-white transition-colors">Login</Link>
-          </nav>
-
-          <Link
-            href="/studio/tts"
-            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:scale-105 active:scale-95 text-white shadow-lg shadow-purple-500/25 transition-all"
-          >
-            Create Voice
-          </Link>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-20 space-y-24">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-20 space-y-24 flex-1">
         
         {/* Hero Section */}
-        <div className="text-center space-y-6 max-w-4xl mx-auto">
+        <div className="text-center space-y-6 max-w-4xl mx-auto pt-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-purple-500/30 text-xs font-medium text-purple-300 backdrop-blur-md shadow-inner">
             <Sparkles className="w-4 h-4 text-pink-400" /> Next-Gen AI Voice Cloning & Speech Synthesis
           </div>
