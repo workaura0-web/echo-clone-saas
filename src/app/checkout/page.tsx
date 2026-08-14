@@ -12,7 +12,7 @@ import {
   Copy,
   CheckCircle2,
   Phone,
-  BuildingLibrary
+  Building
 } from "lucide-react";
 import Link from "next/link";
 
@@ -198,7 +198,7 @@ function CheckoutContent() {
           {/* IBAN (Neon Cyan Glow) */}
           <div className="bg-slate-900/60 p-3.5 rounded-xl border border-cyan-500/30 space-y-1 md:col-span-2 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
             <span className="text-slate-400 block text-[11px] flex items-center gap-1">
-              <BuildingLibrary className="w-3 h-3 text-cyan-400" /> NayaPay IBAN
+              <Building className="w-3 h-3 text-cyan-400" /> NayaPay IBAN
             </span>
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs md:text-sm font-bold text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.7)] tracking-wider">
@@ -257,7 +257,7 @@ export default function CheckoutPage() {
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[140px] pointer-events-none" />
       
-      {/* Suspense Wrapper to Fix Vercel Build Error */}
+      {/* Suspense Wrapper */}
       <Suspense fallback={<div className="text-slate-400 text-sm">Loading Checkout...</div>}>
         <CheckoutContent />
       </Suspense>
