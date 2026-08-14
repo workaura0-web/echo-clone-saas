@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase Client Initialization
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Payment {
   id: string;
@@ -36,16 +35,27 @@ export default function AdminPaymentsPage() {
       return;
     }
 
-    // Check if current user is admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
+    let userIsAdmin = false;
 
-    if (profile?.is_admin) {
+    // 1. Check Direct Email Match
+    if (user.email === 'workaura0@gmail.com' || user.email === 'workaur0@gmail.com') {
+      userIsAdmin = true;
+    } else {
+      // 2. Fallback check from database profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.is_admin) {
+        userIsAdmin = true;
+      }
+    }
+
+    if (userIsAdmin) {
       setIsAdmin(true);
-      fetchPayments();
+      await fetchPayments();
     } else {
       setIsAdmin(false);
       setLoading(false);
@@ -78,80 +88,99 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-white">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white p-8 flex items-center justify-center">
+        <p className="animate-pulse text-slate-400">Loading Payments Panel...</p>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
-      <div className="p-8 text-red-500 text-xl font-bold">
-        Access Denied: You do not have admin permissions to view this page.
+      <div className="min-h-screen bg-slate-950 p-8 flex flex-col items-center justify-center text-center">
+        <h2 className="text-2xl font-bold text-red-500 mb-2">Access Denied</h2>
+        <p className="text-slate-400 text-sm">
+          You do not have admin permissions to view this page.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-6">Admin - Payment Approval Panel</h1>
+    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <h1 className="text-2xl font-bold">Admin - Payment Approval Panel</h1>
+            <p className="text-xs text-slate-400 mt-1">Approve or reject pending user payment requests.</p>
+          </div>
+          <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-xs font-semibold">
+            Admin Verified
+          </span>
+        </div>
 
-      <div className="overflow-x-auto bg-slate-900 rounded-lg p-4 border border-slate-800">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-slate-700 text-slate-400">
-              <th className="p-3">Reference ID</th>
-              <th className="p-3">User ID</th>
-              <th className="p-3">Amount</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Date</th>
-              <th className="p-3 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="p-4 text-center text-slate-500">
-                  No payments found.
-                </td>
+        <div className="overflow-x-auto bg-slate-900/60 rounded-xl p-4 border border-slate-800 backdrop-blur-md">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                <th className="p-3">Reference ID</th>
+                <th className="p-3">User ID</th>
+                <th className="p-3">Amount</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Date</th>
+                <th className="p-3 text-center">Actions</th>
               </tr>
-            ) : (
-              payments.map((p) => (
-                <tr key={p.id} className="border-b border-slate-800 hover:bg-slate-800/50">
-                  <td className="p-3 font-mono text-yellow-400">{p.reference_id || 'N/A'}</td>
-                  <td className="p-3 text-xs text-slate-400">{p.user_id}</td>
-                  <td className="p-3">${p.amount}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        p.status === 'approved'
-                          ? 'bg-green-500/20 text-green-400'
-                          : p.status === 'rejected'
-                          ? 'bg-red-500/20 text-red-400'
-                          : 'bg-yellow-500/20 text-yellow-400'
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-xs text-slate-400">
-                    {new Date(p.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="p-3 text-center space-x-2">
-                    <button
-                      onClick={() => handleStatusUpdate(p.id, 'approved')}
-                      className="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1.5 rounded transition"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleStatusUpdate(p.id, 'rejected')}
-                      className="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded transition"
-                    >
-                      Reject
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {payments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                    No payments found in database.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                payments.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="p-3 font-mono text-yellow-400 text-xs">{p.reference_id || 'N/A'}</td>
+                    <td className="p-3 text-xs text-slate-400 font-mono">{p.user_id}</td>
+                    <td className="p-3 font-semibold text-emerald-400">${p.amount}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase ${
+                          p.status === 'approved'
+                            ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                            : p.status === 'rejected'
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                            : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                        }`}
+                      >
+                        {p.status || 'Pending'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-xs text-slate-400">
+                      {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="p-3 text-center space-x-2">
+                      <button
+                        onClick={() => handleStatusUpdate(p.id, 'approved')}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleStatusUpdate(p.id, 'rejected')}
+                        className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
