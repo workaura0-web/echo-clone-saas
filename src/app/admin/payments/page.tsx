@@ -1,30 +1,57 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/supabase";
-import { CheckCircle, XCircle, RefreshCw, ShieldAlert } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-interface PaymentRecord {
+interface Payment {
   id: string;
-  user_email: string;
-  plan_name: string;
-  price_pkr: string;
-  transaction_id: string;
-  status: "pending" | "approved" | "rejected";
+  user_id: string;
+  amount: number;
+  reference_id: string;
+  status: string;
   created_at: string;
 }
 
 export default function AdminPaymentsPage() {
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const supabase = createClientComponentClient();
 
-  // Fetch pending & recent payments
-  const fetchPayments = async () => {
+  useEffect(() => {
+    checkAdminAndFetchPayments();
+  }, []);
+
+  const checkAdminAndFetchPayments = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // Check if current user is admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.is_admin) {
+      setIsAdmin(true);
+      fetchPayments();
+    } else {
+      setIsAdmin(false);
+      setLoading(false);
+    }
+  };
+
+  const fetchPayments = async () => {
     const { data, error } = await supabase
-      .from("payments")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .from('payments')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (!error && data) {
       setPayments(data);
@@ -32,108 +59,95 @@ export default function AdminPaymentsPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchPayments();
-  }, []);
-
-  // Update Status Function
-  const handleUpdateStatus = async (id: string, newStatus: "approved" | "rejected") => {
+  const handleStatusUpdate = async (id: string, newStatus: string) => {
     const { error } = await supabase
-      .from("payments")
+      .from('payments')
       .update({ status: newStatus })
-      .eq("id", id);
+      .eq('id', id);
 
     if (error) {
-      alert("Failed to update status: " + error.message);
+      alert('Error updating status: ' + error.message);
     } else {
-      setPayments((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
-      );
+      alert(`Payment ${newStatus} successfully!`);
+      fetchPayments(); // Refresh list
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-12 font-sans space-y-8">
-      
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-cyan-400">Admin Payment Approvals</h1>
-          <p className="text-slate-400 text-xs">Verify NayaPay transactions and update status</p>
-        </div>
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
 
-        <button 
-          onClick={fetchPayments} 
-          className="p-2.5 bg-slate-900 border border-white/10 rounded-xl hover:bg-slate-800 text-slate-300 transition-colors flex items-center gap-2 text-xs font-semibold"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </button>
+  if (!isAdmin) {
+    return (
+      <div className="p-8 text-red-500 text-xl font-bold">
+        Access Denied: You do not have admin permissions to view this page.
       </div>
+    );
+  }
 
-      {/* Table */}
-      <div className="bg-slate-900/50 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+  return (
+    <div className="min-h-screen bg-slate-950 text-white p-8">
+      <h1 className="text-3xl font-bold mb-6">Admin - Payment Approval Panel</h1>
+
+      <div className="overflow-x-auto bg-slate-900 rounded-lg p-4 border border-slate-800">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-slate-700 text-slate-400">
+              <th className="p-3">Reference ID</th>
+              <th className="p-3">User ID</th>
+              <th className="p-3">Amount</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Date</th>
+              <th className="p-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.length === 0 ? (
               <tr>
-                <th className="p-4">User Email</th>
-                <th className="p-4">Plan</th>
-                <th className="p-4">Amount</th>
-                <th className="p-4">TRX / Reference ID</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Actions</th>
+                <td colSpan={6} className="p-4 text-center text-slate-500">
+                  No payments found.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {payments.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-6 text-center text-slate-500">
-                    No transactions found.
+            ) : (
+              payments.map((p) => (
+                <tr key={p.id} className="border-b border-slate-800 hover:bg-slate-800/50">
+                  <td className="p-3 font-mono text-yellow-400">{p.reference_id || 'N/A'}</td>
+                  <td className="p-3 text-xs text-slate-400">{p.user_id}</td>
+                  <td className="p-3">${p.amount}</td>
+                  <td className="p-3">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                        p.status === 'approved'
+                          ? 'bg-green-500/20 text-green-400'
+                          : p.status === 'rejected'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
+                      }`}
+                    >
+                      {p.status}
+                    </span>
+                  </td>
+                  <td className="p-3 text-xs text-slate-400">
+                    {new Date(p.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="p-3 text-center space-x-2">
+                    <button
+                      onClick={() => handleStatusUpdate(p.id, 'approved')}
+                      className="bg-green-600 hover:bg-green-500 text-white text-xs px-3 py-1.5 rounded transition"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate(p.id, 'rejected')}
+                      className="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded transition"
+                    >
+                      Reject
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-900/80 transition-colors">
-                    <td className="p-4 font-medium text-slate-200">{p.user_email}</td>
-                    <td className="p-4 font-semibold text-purple-400">{p.plan_name}</td>
-                    <td className="p-4 text-emerald-400 font-bold">{p.price_pkr}</td>
-                    <td className="p-4 font-mono text-cyan-300 select-all">{p.transaction_id}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${
-                        p.status === "approved" 
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
-                          : p.status === "rejected"
-                          ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse"
-                      }`}>
-                        {p.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right space-x-2">
-                      {p.status === "pending" && (
-                        <>
-                          <button
-                            onClick={() => handleUpdateStatus(p.id, "approved")}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition-colors inline-flex items-center gap-1"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" /> Approve
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(p.id, "rejected")}
-                            className="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white rounded-lg font-semibold transition-colors inline-flex items-center gap-1"
-                          >
-                            <XCircle className="w-3.5 h-3.5" /> Reject
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-
     </div>
   );
 }
