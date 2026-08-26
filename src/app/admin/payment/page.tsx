@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { Eye, EyeOff } from 'lucide-react';
 
 // Supabase Client Initialization
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -33,6 +34,7 @@ export default function AdminPaymentsPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [newPasswords, setNewPasswords] = useState<Record<string, string>>({});
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     checkAdminAndFetchPayments();
@@ -248,14 +250,24 @@ export default function AdminPaymentsPage() {
                   <td className="p-3 text-xs text-slate-500 font-mono">{user.id}</td>
                   <td className="p-3 text-xs text-slate-400">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="p-3">
-                    <input
-                      type="password"
-                      minLength={8}
-                      value={newPasswords[user.id] || ''}
-                      onChange={(event) => setNewPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
-                      placeholder="Min 8 characters"
-                      className="w-44 rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-white"
-                    />
+                    <div className="relative w-44">
+                      <input
+                        type={visiblePasswords[user.id] ? "text" : "password"}
+                        minLength={8}
+                        value={newPasswords[user.id] || ''}
+                        onChange={(event) => setNewPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
+                        placeholder="Min 8 characters"
+                        className="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 pr-9 text-xs text-white"
+                      />
+                      <button
+                        type="button"
+                        title={visiblePasswords[user.id] ? "Hide password" : "Show password"}
+                        onClick={() => setVisiblePasswords((current) => ({ ...current, [user.id]: !current[user.id] }))}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {visiblePasswords[user.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </td>
                   <td className="p-3">
                     <button

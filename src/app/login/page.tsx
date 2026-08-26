@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
-import { Sparkles, Mail, Lock, ArrowRight, Heart } from "lucide-react";
+import { Sparkles, Mail, Lock, ArrowRight, Heart, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,11 +12,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage(null);
+    setNotice(null);
 
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -30,6 +33,25 @@ export default function LoginPage() {
     }
 
     router.replace("/dashboard");
+  };
+
+  const handleForgotPassword = async () => {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setErrorMessage("Enter your email address first.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage(null);
+    setNotice(null);
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    });
+
+    if (error) setErrorMessage(error.message);
+    else setNotice("Password reset email sent. Check your inbox.");
+    setLoading(false);
   };
 
   return (
@@ -65,6 +87,12 @@ export default function LoginPage() {
           </div>
         )}
 
+        {notice && (
+          <div role="status" className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-center text-xs text-emerald-200">
+            {notice}
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           
@@ -96,14 +124,25 @@ export default function LoginPage() {
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-slate-100 placeholder-slate-600 text-sm focus:outline-none focus:border-purple-500/80 transition-all"
               />
+              <button type="button" onClick={() => setShowPassword((current) => !current)} title={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={loading}
+              className="text-xs text-purple-400 hover:text-purple-300 disabled:opacity-50"
+            >
+              Forgot password?
+            </button>
           </div>
 
           {/* Submit Button */}
