@@ -11,8 +11,11 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 interface Payment {
   id: string;
   user_id: string;
-  amount: number;
-  reference_id: string;
+  amount?: number;
+  price_pkr?: string;
+  reference_id?: string;
+  transaction_id?: string;
+  user_email?: string;
   status: string;
   created_at: string;
 }
@@ -21,6 +24,7 @@ export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminAndFetchPayments();
@@ -81,9 +85,9 @@ export default function AdminPaymentsPage() {
       .eq('id', id);
 
     if (error) {
-      alert('Error updating status: ' + error.message);
+      setNotice('Error updating status: ' + error.message);
     } else {
-      alert(`Payment ${newStatus} successfully!`);
+      setNotice(`Payment ${newStatus} successfully!`);
       fetchPayments(); // Refresh list
     }
   };
@@ -120,11 +124,18 @@ export default function AdminPaymentsPage() {
           </span>
         </div>
 
+        {notice && (
+          <div className={`rounded-xl border px-4 py-3 text-sm ${notice.startsWith('Error') ? 'border-rose-500/40 bg-rose-500/10 text-rose-200' : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'}`}>
+            {notice}
+          </div>
+        )}
+
         <div className="overflow-x-auto bg-slate-900/60 rounded-xl p-4 border border-slate-800 backdrop-blur-md">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
                 <th className="p-3">Reference ID</th>
+                <th className="p-3">User Email</th>
                 <th className="p-3">User ID</th>
                 <th className="p-3">Amount</th>
                 <th className="p-3">Status</th>
@@ -135,16 +146,17 @@ export default function AdminPaymentsPage() {
             <tbody className="divide-y divide-slate-800">
               {payments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                  <td colSpan={7} className="p-8 text-center text-slate-500">
                     No payments found in database.
                   </td>
                 </tr>
               ) : (
                 payments.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="p-3 font-mono text-yellow-400 text-xs">{p.reference_id || 'N/A'}</td>
+                    <td className="p-3 font-mono text-yellow-400 text-xs">{p.reference_id || p.transaction_id || 'N/A'}</td>
+                    <td className="p-3 text-xs text-cyan-300">{p.user_email || 'N/A'}</td>
                     <td className="p-3 text-xs text-slate-400 font-mono">{p.user_id}</td>
-                    <td className="p-3 font-semibold text-emerald-400">${p.amount}</td>
+                    <td className="p-3 font-semibold text-emerald-400">{p.amount ?? p.price_pkr ?? 'N/A'}</td>
                     <td className="p-3">
                       <span
                         className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase ${

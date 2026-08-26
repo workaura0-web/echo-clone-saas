@@ -108,6 +108,90 @@ const VOICES = [
     sample: "Hello! I am Rohan, speaking with high energy and confidence.",
     basePitch: 0.78,
     baseRate: 1.18
+  },
+  {
+    id: "v7",
+    voiceId: "AZnzlk1XvdvUeBnXmlld",
+    name: "Domi",
+    gender: "Female",
+    accent: "US English",
+    lang: "en-US",
+    style: "Strong & Confident",
+    color: "from-fuchsia-500 to-pink-600",
+    glow: "shadow-fuchsia-500/20",
+    sample: "Hi, I am Domi, with a confident and expressive natural voice.",
+    basePitch: 1,
+    baseRate: 0.98
+  },
+  {
+    id: "v8",
+    voiceId: "piTKgcLEGmPE4e6mEKli",
+    name: "Nicole",
+    gender: "Female",
+    accent: "Australian English",
+    lang: "en-AU",
+    style: "Calm & Conversational",
+    color: "from-rose-500 to-red-500",
+    glow: "shadow-rose-500/20",
+    sample: "Hello, I am Nicole, speaking in a calm and conversational style.",
+    basePitch: 1.08,
+    baseRate: 0.95
+  },
+  {
+    id: "v9",
+    voiceId: "cgSgspJ2msm6clMCkdW9",
+    name: "Jessica",
+    gender: "Female",
+    accent: "US English",
+    lang: "en-US",
+    style: "Bright & Friendly",
+    color: "from-violet-500 to-fuchsia-500",
+    glow: "shadow-violet-500/20",
+    sample: "Hey, I am Jessica, bringing a bright and friendly human tone.",
+    basePitch: 1.12,
+    baseRate: 1.02
+  },
+  {
+    id: "v10",
+    voiceId: "VR6AewLTigWG4xSOukaG",
+    name: "Arnold",
+    gender: "Male",
+    accent: "US English",
+    lang: "en-US",
+    style: "Crisp & Authoritative",
+    color: "from-sky-500 to-blue-600",
+    glow: "shadow-sky-500/20",
+    sample: "Hello, I am Arnold, with a crisp and authoritative narrator voice.",
+    basePitch: 0.8,
+    baseRate: 0.94
+  },
+  {
+    id: "v11",
+    voiceId: "nPczCjzI2devNBz1zQrb",
+    name: "Brian",
+    gender: "Male",
+    accent: "US English",
+    lang: "en-US",
+    style: "Deep & Welcoming",
+    color: "from-cyan-500 to-sky-600",
+    glow: "shadow-cyan-500/20",
+    sample: "Hi, I am Brian, speaking with a deep and welcoming natural tone.",
+    basePitch: 0.78,
+    baseRate: 0.96
+  },
+  {
+    id: "v12",
+    voiceId: "onwK4e9ZLuTAKqWW03F9",
+    name: "Daniel",
+    gender: "Male",
+    accent: "British English",
+    lang: "en-GB",
+    style: "Clear & Professional",
+    color: "from-teal-500 to-emerald-600",
+    glow: "shadow-teal-500/20",
+    sample: "Good day, I am Daniel, delivering a clear professional voice.",
+    basePitch: 0.86,
+    baseRate: 0.92
   }
 ];
 
@@ -142,6 +226,7 @@ export default function TTSStudio() {
   const [hasAudio, setHasAudio] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -173,6 +258,7 @@ export default function TTSStudio() {
         setUser(null);
         setIsProUser(false);
         setCharacterLimit(100);
+        router.replace("/login");
       }
     };
 
@@ -209,7 +295,7 @@ export default function TTSStudio() {
       await audio.play();
     } catch (error) {
       setPreviewingVoiceId(null);
-      alert(error instanceof Error ? error.message : "Voice preview failed");
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Voice preview failed" });
     }
   };
 
@@ -242,7 +328,7 @@ export default function TTSStudio() {
     if (!text.trim()) return;
 
     if (text.length > characterLimit) {
-      alert(`Limit Exceeded! Your current plan allows up to ${characterLimit} characters.`);
+      setNotice({ type: "error", text: `Limit exceeded. Your plan allows up to ${characterLimit} characters.` });
       return;
     }
 
@@ -263,7 +349,7 @@ export default function TTSStudio() {
       setHasAudio(true);
       await updateUsedCharactersCount(text.length);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Audio generation failed");
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Audio generation failed" });
     } finally {
       setIsGenerating(false);
     }
@@ -290,7 +376,7 @@ export default function TTSStudio() {
       a.click();
       document.body.removeChild(a);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Download failed");
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Download failed" });
     } finally {
       setIsDownloading(false);
     }
@@ -301,6 +387,7 @@ export default function TTSStudio() {
     previewAudioRef.current?.pause();
     setText("");
     setAudioUrl(null);
+    setNotice(null);
     setHasAudio(false);
     setIsPlaying(false);
   };
@@ -313,6 +400,11 @@ export default function TTSStudio() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto w-full relative z-10 space-y-8">
+        {notice && (
+          <div className={`rounded-xl border px-4 py-3 text-sm ${notice.type === "error" ? "border-rose-500/40 bg-rose-500/10 text-rose-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
+            {notice.text}
+          </div>
+        )}
         
         {/* Header */}
         <div className="text-center space-y-3">
