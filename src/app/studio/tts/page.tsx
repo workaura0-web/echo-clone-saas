@@ -25,92 +25,8 @@ import {
 
 // Distinct Voice Configurations with realistic pitch, speed, and acoustic formants
 const VOICES = [
-  { 
-    id: "v1", 
-    voiceId: "21m00Tcm4TlvDq8ikWAM",
-    name: "Aria", 
-    gender: "Female", 
-    accent: "US English", 
-    lang: "en-US", 
-    style: "Warm & Soft (Pro)", 
-    color: "from-pink-500 to-rose-500", 
-    glow: "shadow-pink-500/20", 
-    sample: "Hello! I am Aria, speaking with a gentle and warm natural tone.",
-    basePitch: 1.35,
-    baseRate: 0.92
-  },
-  { 
-    id: "v2", 
-    voiceId: "pNInz6obpgDQGcFmaJgB",
-    name: "Liam", 
-    gender: "Male", 
-    accent: "US English", 
-    lang: "en-US", 
-    style: "Heavy & Deep (Radio)", 
-    color: "from-blue-500 to-indigo-500", 
-    glow: "shadow-blue-500/20", 
-    sample: "Hey there! This is Liam with a deep, energetic narrator voice.",
-    basePitch: 0.65,
-    baseRate: 1.05
-  },
-  { 
-    id: "v3", 
-    voiceId: "EXAVITQu4vr4xnSDxMaL",
-    name: "Sophia", 
-    gender: "Female", 
-    accent: "UK English", 
-    lang: "en-GB", 
-    style: "Formal Professional", 
-    color: "from-purple-500 to-violet-500", 
-    glow: "shadow-purple-500/20", 
-    sample: "Good day. I am Sophia, delivering clear corporate presentation audio.",
-    basePitch: 1.15,
-    baseRate: 0.88
-  },
-  { 
-    id: "v4", 
-    voiceId: "ErXwobaYiN019PkySvjV",
-    name: "Oliver", 
-    gender: "Male", 
-    accent: "UK English", 
-    lang: "en-GB", 
-    style: "Calm Storyteller", 
-    color: "from-emerald-500 to-teal-500", 
-    glow: "shadow-emerald-500/20", 
-    sample: "Hello, I am Oliver. Let me tell you an engaging story today.",
-    basePitch: 0.82,
-    baseRate: 0.82
-  },
-  { 
-    id: "v5", 
-    voiceId: "MF3mGyEYCl7XYWbV9V6O",
-    name: "Zoya", 
-    gender: "Female", 
-    accent: "Indian Accent", 
-    lang: "en-IN", 
-    style: "Upbeat & Friendly", 
-    color: "from-amber-500 to-orange-500", 
-    glow: "shadow-amber-500/20", 
-    sample: "Namaste! I am Zoya, clear, bright, and cheerful.",
-    basePitch: 1.45,
-    baseRate: 1.10
-  },
-  { 
-    id: "v6", 
-    voiceId: "TxGEqnHWrfWFTfGW9XjX",
-    name: "Rohan", 
-    gender: "Male", 
-    accent: "Indian Accent", 
-    lang: "en-IN", 
-    style: "Confident & Fast", 
-    color: "from-orange-500 to-amber-600", 
-    glow: "shadow-orange-500/20", 
-    sample: "Hello! I am Rohan, speaking with high energy and confidence.",
-    basePitch: 0.78,
-    baseRate: 1.18
-  },
   {
-    id: "v7",
+    id: "v1",
     voiceId: "AZnzlk1XvdvUeBnXmlld",
     name: "Domi",
     gender: "Female",
@@ -124,7 +40,7 @@ const VOICES = [
     baseRate: 0.98
   },
   {
-    id: "v8",
+    id: "v2",
     voiceId: "piTKgcLEGmPE4e6mEKli",
     name: "Nicole",
     gender: "Female",
@@ -138,7 +54,7 @@ const VOICES = [
     baseRate: 0.95
   },
   {
-    id: "v9",
+    id: "v3",
     voiceId: "cgSgspJ2msm6clMCkdW9",
     name: "Jessica",
     gender: "Female",
@@ -152,7 +68,7 @@ const VOICES = [
     baseRate: 1.02
   },
   {
-    id: "v10",
+    id: "v4",
     voiceId: "VR6AewLTigWG4xSOukaG",
     name: "Arnold",
     gender: "Male",
@@ -166,7 +82,7 @@ const VOICES = [
     baseRate: 0.94
   },
   {
-    id: "v11",
+    id: "v5",
     voiceId: "nPczCjzI2devNBz1zQrb",
     name: "Brian",
     gender: "Male",
@@ -180,7 +96,7 @@ const VOICES = [
     baseRate: 0.96
   },
   {
-    id: "v12",
+    id: "v6",
     voiceId: "onwK4e9ZLuTAKqWW03F9",
     name: "Daniel",
     gender: "Male",
@@ -192,6 +108,90 @@ const VOICES = [
     sample: "Good day, I am Daniel, delivering a clear professional voice.",
     basePitch: 0.86,
     baseRate: 0.92
+  },
+  {
+    id: "v7",
+    voiceId: "Xb7hH8MSUJpSbSDYk0k2",
+    name: "Alice",
+    gender: "Female",
+    accent: "British English",
+    lang: "en-GB",
+    style: "Clear & Warm",
+    color: "from-pink-500 to-fuchsia-600",
+    glow: "shadow-pink-500/20",
+    sample: "Hello, I am Alice, speaking with a clear and warm natural voice.",
+    basePitch: 1.08,
+    baseRate: 0.96
+  },
+  {
+    id: "v8",
+    voiceId: "XrExE9yKIg1WjnnlVkGX",
+    name: "Matilda",
+    gender: "Female",
+    accent: "Australian English",
+    lang: "en-AU",
+    style: "Friendly Storyteller",
+    color: "from-rose-500 to-orange-500",
+    glow: "shadow-rose-500/20",
+    sample: "Hi, I am Matilda, with a friendly and expressive storytelling voice.",
+    basePitch: 1.05,
+    baseRate: 0.94
+  },
+  {
+    id: "v9",
+    voiceId: "CwhRBWXzGAHq8TQ4Fs17",
+    name: "Roger",
+    gender: "Male",
+    accent: "US English",
+    lang: "en-US",
+    style: "Laid-back Narrator",
+    color: "from-blue-500 to-cyan-600",
+    glow: "shadow-blue-500/20",
+    sample: "Hey there, I am Roger, with a relaxed and natural narrator voice.",
+    basePitch: 0.84,
+    baseRate: 0.98
+  },
+  {
+    id: "v10",
+    voiceId: "bIHbv24MWmeRgasZH58o",
+    name: "Will",
+    gender: "Male",
+    accent: "US English",
+    lang: "en-US",
+    style: "Relaxed & Deep",
+    color: "from-indigo-500 to-blue-700",
+    glow: "shadow-indigo-500/20",
+    sample: "Hello, I am Will, speaking with a relaxed and deep human tone.",
+    basePitch: 0.8,
+    baseRate: 0.95
+  },
+  {
+    id: "v11",
+    voiceId: "TX3LPaxmHKxFdv7VOQHJ",
+    name: "Liam",
+    gender: "Male",
+    accent: "US English",
+    lang: "en-US",
+    style: "Confident Presenter",
+    color: "from-sky-500 to-indigo-600",
+    glow: "shadow-sky-500/20",
+    sample: "Hi, I am Liam, delivering a confident and polished presentation voice.",
+    basePitch: 0.86,
+    baseRate: 1
+  },
+  {
+    id: "v12",
+    voiceId: "cjVigY5qzO86Huf0OWal",
+    name: "Eric",
+    gender: "Male",
+    accent: "US English",
+    lang: "en-US",
+    style: "Smooth & Conversational",
+    color: "from-emerald-500 to-teal-600",
+    glow: "shadow-emerald-500/20",
+    sample: "Hello, I am Eric, speaking in a smooth and conversational style.",
+    basePitch: 0.88,
+    baseRate: 0.97
   }
 ];
 
