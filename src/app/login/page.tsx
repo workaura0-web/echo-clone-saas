@@ -103,7 +103,7 @@ export default function LoginPage() {
 
         {/* Footer Link */}
         <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-purple-400 hover:text-purple-300 font-semibold transition-colors">
             Sign Up
           </Link>

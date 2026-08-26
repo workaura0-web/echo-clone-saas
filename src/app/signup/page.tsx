@@ -2,7 +2,7 @@
 import { supabase } from "@/lib/supabase/supabase";
 import { useState } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, Lock, Mail, User, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Lock, Mail, User, CheckCircle2 } from "lucide-react";
 
 export default function SignUpPage() {
   const [fullName, setFullName] = useState("");

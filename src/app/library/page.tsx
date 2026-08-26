@@ -8,7 +8,6 @@ import {
   Pause, 
   Download, 
   Trash2, 
-  Share2, 
   Search, 
   Music, 
   Plus, 
@@ -146,7 +145,7 @@ export default function LibraryPage() {
 
                   {/* Audio Preview Text */}
                   <p className="text-xs text-slate-300 bg-slate-950/60 p-3 rounded-xl border border-white/5 line-clamp-2 leading-relaxed">
-                    "{item.text}"
+                    &quot;{item.text}&quot;
                   </p>
 
                   {/* Player & Download Toolbar */}

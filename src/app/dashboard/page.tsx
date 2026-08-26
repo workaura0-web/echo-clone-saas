@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase"; // Path verify kar lein
+import type { User } from "@supabase/supabase-js";
 import { 
   LogOut, 
   Sparkles, 
@@ -16,8 +17,12 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<{
+    total_characters: number;
+    used_characters: number;
+    plan_name: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 

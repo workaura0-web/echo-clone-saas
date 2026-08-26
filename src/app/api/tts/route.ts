@@ -68,10 +68,10 @@ export async function POST(req: NextRequest) {
     const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
     return NextResponse.json({ audioUrl: audioDataUrl });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("TTS Route Crash Error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      { error: error instanceof Error ? error.message : "Internal Server Error" },
       { status: 500 }
     );
   }

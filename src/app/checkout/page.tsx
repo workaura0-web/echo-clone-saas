@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   Copy,
   CheckCircle2,
-  Phone,
   Building
 } from "lucide-react";
 import Link from "next/link";
@@ -103,8 +102,8 @@ function CheckoutContent() {
         text: "Payment details submitted successfully! Your Pro Plan will be activated as soon as admin approves the transaction." 
       });
       setTransactionId("");
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to submit transaction." });
+    } catch (err: unknown) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to submit transaction." });
     } finally {
       setIsSubmitting(false);
     }

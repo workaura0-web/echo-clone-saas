@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
+import type { User } from "@supabase/supabase-js";
 import { 
   Play, 
   Sparkles, 
@@ -123,7 +124,7 @@ export default function TTSStudio() {
   const router = useRouter();
 
   // User & Plan State
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isProUser, setIsProUser] = useState(false);
   const [characterLimit, setCharacterLimit] = useState(100);
 
