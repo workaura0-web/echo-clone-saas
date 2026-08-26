@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
 import { 
@@ -26,6 +26,7 @@ import {
 const VOICES = [
   { 
     id: "v1", 
+    voiceId: "21m00Tcm4TlvDq8ikWAM",
     name: "Aria", 
     gender: "Female", 
     accent: "US English", 
@@ -39,6 +40,7 @@ const VOICES = [
   },
   { 
     id: "v2", 
+    voiceId: "pNInz6obpgDQGcFmaJgB",
     name: "Liam", 
     gender: "Male", 
     accent: "US English", 
@@ -52,6 +54,7 @@ const VOICES = [
   },
   { 
     id: "v3", 
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
     name: "Sophia", 
     gender: "Female", 
     accent: "UK English", 
@@ -65,6 +68,7 @@ const VOICES = [
   },
   { 
     id: "v4", 
+    voiceId: "ErXwobaYiN019PkySvjV",
     name: "Oliver", 
     gender: "Male", 
     accent: "UK English", 
@@ -78,6 +82,7 @@ const VOICES = [
   },
   { 
     id: "v5", 
+    voiceId: "MF3mGyEYCl7XYWbV9V6O",
     name: "Zoya", 
     gender: "Female", 
     accent: "Indian Accent", 
@@ -91,6 +96,7 @@ const VOICES = [
   },
   { 
     id: "v6", 
+    voiceId: "TxGEqnHWrfWFTfGW9XjX",
     name: "Rohan", 
     gender: "Male", 
     accent: "Indian Accent", 
@@ -105,7 +111,7 @@ const VOICES = [
 ];
 
 const EMOTIONS = ["Neutral", "Excited", "Whispering", "Professional", "Dramatic"];
-const FORMATS = ["MP3", "WAV", "AAC"];
+const FORMATS = ["MP3"];
 
 const SAMPLE_TEMPLATES = [
   { label: "Tech Promo", text: "Welcome to the future of AI voice generation. Transform any script into human-like audio instantly." },
@@ -134,8 +140,9 @@ export default function TTSStudio() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-
-  const [availableBrowserVoices, setAvailableBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // 1. Plan Verification with support for 'pro', 'approved', 'active' status
   useEffect(() => {
@@ -171,73 +178,38 @@ export default function TTSStudio() {
     fetchUserAndPlan();
   }, []);
 
-  // 2. Load System Voices
-  useEffect(() => {
-    const loadVoices = () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        setAvailableBrowserVoices(window.speechSynthesis.getVoices());
-      }
-    };
-
-    loadVoices();
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-
-    return () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
   const currentVoice = VOICES.find((v) => v.id === selectedVoice) || VOICES[0];
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
   const estimatedSeconds = Math.ceil(wordCount / 2.5);
 
-  // Helper to pick best voice for Gender and Accent
-  const getSystemVoice = (voiceConfig: typeof VOICES[0]) => {
-    if (!availableBrowserVoices.length) return null;
-
-    const matches = availableBrowserVoices.filter((v) =>
-      v.lang.toLowerCase().includes(voiceConfig.lang.slice(0, 2).toLowerCase())
-    );
-
-    const isFemale = voiceConfig.gender === "Female";
-    const genderVoice = matches.find((v) => {
-      const n = v.name.toLowerCase();
-      return isFemale
-        ? n.includes("female") || n.includes("zira") || n.includes("samantha") || n.includes("aria") || n.includes("natural")
-        : n.includes("male") || n.includes("david") || n.includes("mark") || n.includes("george") || n.includes("guy");
-    });
-
-    return genderVoice || matches[0] || availableBrowserVoices[0];
-  };
-
-  // Previewing Voices with unique speed & pitch
-  const handlePreviewVoice = (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
+  const handlePreviewVoice = async (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
     e.stopPropagation();
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
-    window.speechSynthesis.cancel();
 
     if (previewingVoiceId === voiceItem.id) {
+      previewAudioRef.current?.pause();
       setPreviewingVoiceId(null);
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(voiceItem.sample);
-    utterance.pitch = voiceItem.basePitch;
-    utterance.rate = voiceItem.baseRate;
-
-    const sysVoice = getSystemVoice(voiceItem);
-    if (sysVoice) utterance.voice = sysVoice;
-
-    utterance.onend = () => setPreviewingVoiceId(null);
-    utterance.onerror = () => setPreviewingVoiceId(null);
-
+    previewAudioRef.current?.pause();
     setPreviewingVoiceId(voiceItem.id);
-    window.speechSynthesis.speak(utterance);
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: voiceItem.sample, voiceId: voiceItem.voiceId, speed: voiceItem.baseRate }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Preview failed");
+      const audio = new Audio(result.audioUrl);
+      previewAudioRef.current = audio;
+      audio.onended = () => setPreviewingVoiceId(null);
+      audio.onerror = () => setPreviewingVoiceId(null);
+      await audio.play();
+    } catch (error) {
+      setPreviewingVoiceId(null);
+      alert(error instanceof Error ? error.message : "Voice preview failed");
+    }
   };
 
   // Update Supabase Database Character Usage Counter
@@ -277,107 +249,57 @@ export default function TTSStudio() {
     setPreviewingVoiceId(null);
     setIsPlaying(false);
 
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
     try {
-      let finalPitch = currentVoice.basePitch * pitch;
-      let finalRate = currentVoice.baseRate * speed;
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voiceId: currentVoice.voiceId, speed, pitch, emotion }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Audio generation failed");
 
-      if (emotion === "Excited") {
-        finalPitch += 0.25;
-        finalRate += 0.15;
-      } else if (emotion === "Whispering") {
-        finalPitch -= 0.25;
-        finalRate -= 0.20;
-      } else if (emotion === "Dramatic") {
-        finalRate -= 0.30;
-      }
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = Math.min(Math.max(finalRate, 0.4), 2);
-      utterance.pitch = Math.min(Math.max(finalPitch, 0.4), 1.9);
-
-      const sysVoice = getSystemVoice(currentVoice);
-      if (sysVoice) utterance.voice = sysVoice;
-
-      utterance.onend = async () => {
-        setIsPlaying(false);
-        setIsGenerating(false);
-        setHasAudio(true);
-        await updateUsedCharactersCount(text.length);
-      };
-
-      utterance.onerror = () => {
-        setIsGenerating(false);
-        setIsPlaying(false);
-      };
-
-      setIsGenerating(false);
+      setAudioUrl(result.audioUrl);
       setHasAudio(true);
-      setIsPlaying(true);
-
-      window.speechSynthesis.speak(utterance);
       await updateUsedCharactersCount(text.length);
-
-    } catch (err) {
-      console.error("TTS Generation Error:", err);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Audio generation failed");
+    } finally {
       setIsGenerating(false);
     }
   };
 
   const handleTogglePlay = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
-    if (isPlaying) {
-      window.speechSynthesis.cancel();
-      setIsPlaying(false);
-    } else {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.pitch = currentVoice.basePitch * pitch;
-      utterance.rate = currentVoice.baseRate * speed;
-
-      const sysVoice = getSystemVoice(currentVoice);
-      if (sysVoice) utterance.voice = sysVoice;
-
-      utterance.onend = () => setIsPlaying(false);
-      utterance.onerror = () => setIsPlaying(false);
-
-      setIsPlaying(true);
-      window.speechSynthesis.speak(utterance);
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) audio.pause();
+    else void audio.play();
+    setIsPlaying(!isPlaying);
   };
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!text.trim()) return;
+    if (!audioUrl) return;
 
     try {
       setIsDownloading(true);
-      const mimeType = audioFormat.toLowerCase() === "wav" ? "audio/wav" : "audio/mp3";
-      const blob = new Blob([text], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `${currentVoice.name}_voice.${audioFormat.toLowerCase()}`;
+      a.href = audioUrl;
+      a.download = `${currentVoice.name}_voice.mp3`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Download Error:", err);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Download failed");
     } finally {
       setIsDownloading(false);
     }
   };
 
   const handleReset = () => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
+    audioRef.current?.pause();
+    previewAudioRef.current?.pause();
     setText("");
+    setAudioUrl(null);
     setHasAudio(false);
     setIsPlaying(false);
   };
@@ -642,6 +564,13 @@ export default function TTSStudio() {
             {/* Generated Audio Control Box */}
             {hasAudio && (
               <div className="bg-slate-900/60 backdrop-blur-xl border border-purple-500/30 p-5 rounded-3xl shadow-xl space-y-4">
+                <audio
+                  ref={audioRef}
+                  src={audioUrl ?? undefined}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
+                />
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <button
