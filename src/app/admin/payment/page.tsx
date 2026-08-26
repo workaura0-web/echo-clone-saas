@@ -20,11 +20,19 @@ interface Payment {
   created_at: string;
 }
 
+interface AdminUser {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [newPasswords, setNewPasswords] = useState<Record<string, string>>({});
 
   useEffect(() => {
     checkAdminAndFetchPayments();
@@ -59,7 +67,7 @@ export default function AdminPaymentsPage() {
 
     if (userIsAdmin) {
       setIsAdmin(true);
-      await fetchPayments();
+      await Promise.all([fetchPayments(), fetchUsers()]);
     } else {
       setIsAdmin(false);
       setLoading(false);
@@ -76,6 +84,30 @@ export default function AdminPaymentsPage() {
       setPayments(data);
     }
     setLoading(false);
+  };
+
+  const fetchUsers = async () => {
+    const response = await fetch('/api/admin/users');
+    const result = await response.json();
+    if (response.ok) setUsers(result.users);
+    else setNotice(result.error || 'Unable to load users');
+  };
+
+  const handlePasswordUpdate = async (userId: string) => {
+    const password = newPasswords[userId] || '';
+    if (password.length < 8) {
+      setNotice('Password must contain at least 8 characters.');
+      return;
+    }
+
+    const response = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, password }),
+    });
+    const result = await response.json();
+    setNotice(response.ok ? 'Password updated successfully.' : result.error || 'Unable to update password');
+    if (response.ok) setNewPasswords((current) => ({ ...current, [userId]: '' }));
   };
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
@@ -190,6 +222,51 @@ export default function AdminPaymentsPage() {
                   </tr>
                 ))
               )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="overflow-x-auto bg-slate-900/60 rounded-xl p-4 border border-slate-800 backdrop-blur-md">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold">All Users</h2>
+            <span className="text-xs text-slate-400">{users.length} accounts</span>
+          </div>
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                <th className="p-3">Email</th>
+                <th className="p-3">User ID</th>
+                <th className="p-3">Created</th>
+                <th className="p-3">New Password</th>
+                <th className="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td className="p-3 text-xs text-cyan-300">{user.email || 'No email'}</td>
+                  <td className="p-3 text-xs text-slate-500 font-mono">{user.id}</td>
+                  <td className="p-3 text-xs text-slate-400">{new Date(user.created_at).toLocaleDateString()}</td>
+                  <td className="p-3">
+                    <input
+                      type="password"
+                      minLength={8}
+                      value={newPasswords[user.id] || ''}
+                      onChange={(event) => setNewPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
+                      placeholder="Min 8 characters"
+                      className="w-44 rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-white"
+                    />
+                  </td>
+                  <td className="p-3">
+                    <button
+                      onClick={() => handlePasswordUpdate(user.id)}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg"
+                    >
+                      Set Password
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

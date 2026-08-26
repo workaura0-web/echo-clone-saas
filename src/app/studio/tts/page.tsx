@@ -27,34 +27,6 @@ import {
 const VOICES = [
   {
     id: "v1",
-    voiceId: "AZnzlk1XvdvUeBnXmlld",
-    name: "Domi",
-    gender: "Female",
-    accent: "US English",
-    lang: "en-US",
-    style: "Strong & Confident",
-    color: "from-fuchsia-500 to-pink-600",
-    glow: "shadow-fuchsia-500/20",
-    sample: "Hi, I am Domi, with a confident and expressive natural voice.",
-    basePitch: 1,
-    baseRate: 0.98
-  },
-  {
-    id: "v2",
-    voiceId: "piTKgcLEGmPE4e6mEKli",
-    name: "Nicole",
-    gender: "Female",
-    accent: "Australian English",
-    lang: "en-AU",
-    style: "Calm & Conversational",
-    color: "from-rose-500 to-red-500",
-    glow: "shadow-rose-500/20",
-    sample: "Hello, I am Nicole, speaking in a calm and conversational style.",
-    basePitch: 1.08,
-    baseRate: 0.95
-  },
-  {
-    id: "v3",
     voiceId: "cgSgspJ2msm6clMCkdW9",
     name: "Jessica",
     gender: "Female",
@@ -68,7 +40,7 @@ const VOICES = [
     baseRate: 1.02
   },
   {
-    id: "v4",
+    id: "v2",
     voiceId: "VR6AewLTigWG4xSOukaG",
     name: "Arnold",
     gender: "Male",
@@ -82,7 +54,7 @@ const VOICES = [
     baseRate: 0.94
   },
   {
-    id: "v5",
+    id: "v3",
     voiceId: "nPczCjzI2devNBz1zQrb",
     name: "Brian",
     gender: "Male",
@@ -96,7 +68,7 @@ const VOICES = [
     baseRate: 0.96
   },
   {
-    id: "v6",
+    id: "v4",
     voiceId: "onwK4e9ZLuTAKqWW03F9",
     name: "Daniel",
     gender: "Male",
@@ -110,7 +82,7 @@ const VOICES = [
     baseRate: 0.92
   },
   {
-    id: "v7",
+    id: "v5",
     voiceId: "Xb7hH8MSUJpSbSDYk0k2",
     name: "Alice",
     gender: "Female",
@@ -124,7 +96,7 @@ const VOICES = [
     baseRate: 0.96
   },
   {
-    id: "v8",
+    id: "v6",
     voiceId: "XrExE9yKIg1WjnnlVkGX",
     name: "Matilda",
     gender: "Female",
@@ -138,7 +110,7 @@ const VOICES = [
     baseRate: 0.94
   },
   {
-    id: "v9",
+    id: "v7",
     voiceId: "CwhRBWXzGAHq8TQ4Fs17",
     name: "Roger",
     gender: "Male",
@@ -152,7 +124,7 @@ const VOICES = [
     baseRate: 0.98
   },
   {
-    id: "v10",
+    id: "v8",
     voiceId: "bIHbv24MWmeRgasZH58o",
     name: "Will",
     gender: "Male",
@@ -166,7 +138,7 @@ const VOICES = [
     baseRate: 0.95
   },
   {
-    id: "v11",
+    id: "v9",
     voiceId: "TX3LPaxmHKxFdv7VOQHJ",
     name: "Liam",
     gender: "Male",
@@ -180,7 +152,7 @@ const VOICES = [
     baseRate: 1
   },
   {
-    id: "v12",
+    id: "v10",
     voiceId: "cjVigY5qzO86Huf0OWal",
     name: "Eric",
     gender: "Male",
