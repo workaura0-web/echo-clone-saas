@@ -89,7 +89,10 @@ export default function AdminPaymentsPage() {
   };
 
   const fetchUsers = async () => {
-    const response = await fetch('/api/admin/users');
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch('/api/admin/users', {
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+    });
     const result = await response.json();
     if (response.ok) setUsers(result.users);
     else setNotice(result.error || 'Unable to load users');
@@ -102,9 +105,13 @@ export default function AdminPaymentsPage() {
       return;
     }
 
+    const { data: { session } } = await supabase.auth.getSession();
     const response = await fetch('/api/admin/users', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
       body: JSON.stringify({ userId, password }),
     });
     const result = await response.json();

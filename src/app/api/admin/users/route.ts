@@ -13,26 +13,41 @@ function getAdminClient() {
   );
 }
 
-async function isAdmin() {
+async function isAdmin(request: NextRequest) {
+  const accessToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (accessToken) {
+    const publicClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user } } = await publicClient.auth.getUser(accessToken);
+    if (user) return checkAdminUser(user.id, user.email);
+  }
+
   const supabase = createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  if (user.email === "workaura0@gmail.com" || user.email === "workaur0@gmail.com") {
+  return checkAdminUser(user.id, user.email);
+}
+
+async function checkAdminUser(userId: string, email?: string) {
+  if (email === "workaura0@gmail.com" || email === "workaur0@gmail.com") {
     return true;
   }
 
+  const supabase = createServerSupabaseClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   return profile?.is_admin === true;
 }
 
-export async function GET() {
-  if (!(await isAdmin())) {
+export async function GET(request: NextRequest) {
+  if (!(await isAdmin(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -55,7 +70,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!(await isAdmin())) {
+  if (!(await isAdmin(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
