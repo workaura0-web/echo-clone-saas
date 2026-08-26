@@ -2,19 +2,34 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/supabase";
 import { Sparkles, Mail, Lock, ArrowRight, Heart } from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Supabase Auth Integration
-    console.log("Logging in with:", email, password);
-    setTimeout(() => setLoading(false), 1000);
+    setErrorMessage(null);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (error) {
+      setErrorMessage(error.message);
+      setLoading(false);
+      return;
+    }
+
+    router.replace("/dashboard");
   };
 
   return (
@@ -43,6 +58,12 @@ export default function LoginPage() {
             Sign in to your Echo Clone account
           </p>
         </div>
+
+        {errorMessage && (
+          <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-center text-xs text-rose-200">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">
