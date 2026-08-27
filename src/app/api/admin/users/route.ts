@@ -61,9 +61,14 @@ export async function GET(request: NextRequest) {
 
   const { data: profiles } = await adminClient
     .from("profiles")
-    .select("id, is_approved")
+    .select("id, plan_status")
     .in("id", data.users.map((user) => user.id));
-  const approvalByUserId = new Map((profiles ?? []).map((profile) => [profile.id, profile.is_approved === true]));
+  const approvalByUserId = new Map(
+    (profiles ?? []).map((profile) => [
+      profile.id,
+      ["approved", "active", "pro"].includes(String(profile.plan_status).toLowerCase()),
+    ])
+  );
 
   return NextResponse.json({
     users: data.users.map((user) => ({
@@ -93,7 +98,7 @@ export async function PATCH(request: NextRequest) {
 
   const { error } = await adminClient
     .from("profiles")
-    .update({ is_approved: approved, updated_at: new Date().toISOString() })
+    .update({ plan_status: approved ? "approved" : "rejected", updated_at: new Date().toISOString() })
     .eq("id", userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 

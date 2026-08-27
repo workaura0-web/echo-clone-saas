@@ -182,6 +182,7 @@ export default function TTSStudio() {
   // User & Plan State
   const [user, setUser] = useState<User | null>(null);
   const [isProUser, setIsProUser] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
   const [characterLimit, setCharacterLimit] = useState(10000);
 
   // Audio States
@@ -212,7 +213,7 @@ export default function TTSStudio() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("plan_status, plan, is_approved")
+          .select("plan_status, plan")
           .eq("id", currentUser.id)
           .single();
 
@@ -221,9 +222,16 @@ export default function TTSStudio() {
           profile?.plan_status?.toLowerCase() === "pro" || 
           profile?.plan_status?.toLowerCase() === "approved" ||
           profile?.plan_status?.toLowerCase() === "active" ||
-          profile?.plan?.toLowerCase() === "pro" ||
-          profile?.is_approved === true;
+          profile?.plan?.toLowerCase() === "pro";
 
+        const approved =
+          profile?.plan_status?.toLowerCase() === "approved" ||
+          profile?.plan_status?.toLowerCase() === "active" ||
+          profile?.plan_status?.toLowerCase() === "pro" ||
+          currentUser.email === "workaura0@gmail.com" ||
+          currentUser.email === "workaur0@gmail.com";
+
+        setIsApproved(approved);
         setIsProUser(planActive);
         setCharacterLimit(10000);
       } else {
@@ -240,6 +248,17 @@ export default function TTSStudio() {
   const currentVoice = VOICES.find((v) => v.id === selectedVoice) || VOICES[0];
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
   const estimatedSeconds = Math.ceil(wordCount / 2.5);
+
+  if (user && !isApproved) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+        <div className="max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center">
+          <h1 className="text-xl font-bold text-amber-200">Waiting for Admin Approval</h1>
+          <p className="mt-2 text-sm text-amber-100/80">TTS Studio access will be available after your account is approved.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handlePreviewVoice = async (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
     e.stopPropagation();

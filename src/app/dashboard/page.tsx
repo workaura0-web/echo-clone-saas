@@ -27,6 +27,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [approvalNotice, setApprovalNotice] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("notice") === "approval") {
@@ -57,6 +58,14 @@ function DashboardContent() {
 
       if (!error) {
         setProfile(data);
+        setIsApproved(
+          data?.is_admin === true ||
+          ["approved", "active", "pro"].includes(String(data?.plan_status).toLowerCase()) ||
+          user.email === "workaura0@gmail.com" ||
+          user.email === "workaur0@gmail.com"
+        );
+      } else if (user.email === "workaura0@gmail.com" || user.email === "workaur0@gmail.com") {
+        setIsApproved(true);
       }
       
       setLoading(false);
@@ -83,6 +92,17 @@ function DashboardContent() {
         <div className="flex items-center gap-3">
           <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-sm">Checking authentication & loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isApproved) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+        <div className="max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center">
+          <h1 className="text-xl font-bold text-amber-200">Waiting for Admin Approval</h1>
+          <p className="mt-2 text-sm text-amber-100/80">Your account is pending approval. Dashboard access will be available after approval.</p>
         </div>
       </div>
     );
