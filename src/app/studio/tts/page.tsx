@@ -213,21 +213,16 @@ export default function TTSStudio() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("plan_status, plan")
+          .select("plan")
           .eq("id", currentUser.id)
           .single();
 
         // Check for 'pro', 'approved', 'active', or 'is_approved'
         const planActive = 
-          profile?.plan_status?.toLowerCase() === "pro" || 
-          profile?.plan_status?.toLowerCase() === "approved" ||
-          profile?.plan_status?.toLowerCase() === "active" ||
           profile?.plan?.toLowerCase() === "pro";
 
         const approved =
-          profile?.plan_status?.toLowerCase() === "approved" ||
-          profile?.plan_status?.toLowerCase() === "active" ||
-          profile?.plan_status?.toLowerCase() === "pro" ||
+          currentUser.user_metadata?.account_status === "approved" ||
           currentUser.email === "workaura0@gmail.com" ||
           currentUser.email === "workaur0@gmail.com";
 

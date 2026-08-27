@@ -59,24 +59,13 @@ export async function GET(request: NextRequest) {
   const { data, error } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { data: profiles } = await adminClient
-    .from("profiles")
-    .select("id, plan_status")
-    .in("id", data.users.map((user) => user.id));
-  const approvalByUserId = new Map(
-    (profiles ?? []).map((profile) => [
-      profile.id,
-      ["approved", "active", "pro"].includes(String(profile.plan_status).toLowerCase()),
-    ])
-  );
-
   return NextResponse.json({
     users: data.users.map((user) => ({
       id: user.id,
       email: user.email ?? "",
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
-      is_approved: approvalByUserId.get(user.id) ?? false,
+      is_approved: user.user_metadata?.account_status === "approved",
     })),
   });
 }
@@ -96,10 +85,17 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "User ID and approval status are required" }, { status: 400 });
   }
 
-  const { error } = await adminClient
-    .from("profiles")
-    .update({ plan_status: approved ? "approved" : "rejected", updated_at: new Date().toISOString() })
-    .eq("id", userId);
+  const { data: targetUser, error: targetUserError } = await adminClient.auth.admin.getUserById(userId);
+  if (targetUserError || !targetUser.user) {
+    return NextResponse.json({ error: targetUserError?.message || "User not found" }, { status: 404 });
+  }
+
+  const { error } = await adminClient.auth.admin.updateUserById(userId, {
+    user_metadata: {
+      ...targetUser.user.user_metadata,
+      account_status: approved ? "approved" : "rejected",
+    },
+  });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   return NextResponse.json({ success: true, is_approved: approved });

@@ -60,11 +60,11 @@ function DashboardContent() {
         setProfile(data);
         setIsApproved(
           data?.is_admin === true ||
-          ["approved", "active", "pro"].includes(String(data?.plan_status).toLowerCase()) ||
+          user.user_metadata?.account_status === "approved" ||
           user.email === "workaura0@gmail.com" ||
           user.email === "workaur0@gmail.com"
         );
-      } else if (user.email === "workaura0@gmail.com" || user.email === "workaur0@gmail.com") {
+      } else if (user.user_metadata?.account_status === "approved" || user.email === "workaura0@gmail.com" || user.email === "workaur0@gmail.com") {
         setIsApproved(true);
       }
       
