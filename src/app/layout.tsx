@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: "AI Voice Generator and Voice Cloning Platform",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/echo-icon.svg",
-    apple: "/echo-icon.svg",
+    icon: "/echo-icon-512.png",
+    apple: "/echo-icon-512.png",
   },
   appleWebApp: {
     capable: true,
