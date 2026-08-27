@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@supabase/supabase-js";
+import { ArrowRight } from "lucide-react";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -70,7 +71,7 @@ export default function Navbar() {
     : baseLinks;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl transition-all">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl transition-all">
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-6">
         
         {/* Animated Brand Logo */}
@@ -78,13 +79,13 @@ export default function Navbar() {
           <motion.div
             whileHover={{ scale: 1.05, rotate: 2 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-400 p-[1px] rounded-xl shadow-lg shadow-indigo-500/20"
+            className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 p-[1px] rounded-xl shadow-lg shadow-purple-500/20"
           >
-            <span className="block bg-zinc-950 group-hover:bg-transparent text-white px-3 py-1 rounded-[11px] text-xs font-black tracking-wider transition-all duration-300">
+            <span className="block bg-slate-950 group-hover:bg-transparent text-white px-3 py-1 rounded-[11px] text-xs font-black tracking-wider transition-all duration-300">
               ECHO
             </span>
           </motion.div>
-          <span className="font-bold text-lg text-zinc-100 tracking-tight group-hover:text-white transition-colors">
+          <span className="font-bold text-lg text-slate-100 tracking-tight group-hover:text-white transition-colors">
             Clone
           </span>
         </Link>
@@ -122,7 +123,7 @@ export default function Navbar() {
               className="relative group overflow-hidden px-4 py-2 text-xs font-bold rounded-xl bg-white text-black hover:bg-zinc-200 transition-all shadow-md shadow-white/5 flex items-center gap-1.5"
             >
               <span>Create Voice</span>
-              <span className="group-hover:translate-x-0.5 transition-transform text-xs">→</span>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </motion.div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase"; // Path verify kar lein
 import type { User } from "@supabase/supabase-js";
 import { 
@@ -17,6 +17,7 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{
     total_characters: number;
@@ -25,6 +26,14 @@ export default function DashboardPage() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [approvalNotice, setApprovalNotice] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("notice") === "approval") {
+      setApprovalNotice(true);
+      router.replace("/dashboard");
+    }
+  }, [router, searchParams]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -93,6 +102,11 @@ export default function DashboardPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/15 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto w-full relative z-10 space-y-8">
+        {approvalNotice && (
+          <div role="status" className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
+            Your account is ready. Please wait for admin approval before using premium features.
+          </div>
+        )}
         
         {/* Top Bar / Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">

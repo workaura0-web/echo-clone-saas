@@ -15,5 +15,10 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}${next.startsWith("/") ? next : "/dashboard"}`);
+  const destination = new URL(next.startsWith("/") ? next : "/dashboard", requestUrl.origin);
+  if (destination.pathname === "/dashboard") {
+    destination.searchParams.set("notice", "approval");
+  }
+
+  return NextResponse.redirect(destination);
 }

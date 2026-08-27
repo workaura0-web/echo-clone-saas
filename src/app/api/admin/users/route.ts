@@ -59,14 +59,45 @@ export async function GET(request: NextRequest) {
   const { data, error } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const { data: profiles } = await adminClient
+    .from("profiles")
+    .select("id, is_approved")
+    .in("id", data.users.map((user) => user.id));
+  const approvalByUserId = new Map((profiles ?? []).map((profile) => [profile.id, profile.is_approved === true]));
+
   return NextResponse.json({
     users: data.users.map((user) => ({
       id: user.id,
       email: user.email ?? "",
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
+      is_approved: approvalByUserId.get(user.id) ?? false,
     })),
   });
+}
+
+export async function PATCH(request: NextRequest) {
+  if (!(await isAdmin(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const adminClient = getAdminClient();
+  if (!adminClient) {
+    return NextResponse.json({ error: "Server admin key is not configured" }, { status: 500 });
+  }
+
+  const { userId, approved } = await request.json();
+  if (typeof userId !== "string" || typeof approved !== "boolean") {
+    return NextResponse.json({ error: "User ID and approval status are required" }, { status: 400 });
+  }
+
+  const { error } = await adminClient
+    .from("profiles")
+    .update({ is_approved: approved, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  return NextResponse.json({ success: true, is_approved: approved });
 }
 
 export async function POST(request: NextRequest) {

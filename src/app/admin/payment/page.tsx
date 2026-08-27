@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Check, Eye, EyeOff, Trash2, X } from 'lucide-react';
 
 // Supabase Client Initialization
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -25,6 +25,7 @@ interface AdminUser {
   id: string;
   email: string;
   created_at: string;
+  is_approved: boolean;
 }
 
 export default function AdminPaymentsPage() {
@@ -137,6 +138,25 @@ export default function AdminPaymentsPage() {
       setNotice('User deleted successfully.');
     } else {
       setNotice(result.error || 'Unable to delete user');
+    }
+  };
+
+  const handleAccountApproval = async (user: AdminUser, approved: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+      body: JSON.stringify({ userId: user.id, approved }),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      setUsers((current) => current.map((item) => item.id === user.id ? { ...item, is_approved: approved } : item));
+      setNotice(approved ? 'User account approved.' : 'User account rejected.');
+    } else {
+      setNotice(result.error || 'Unable to update account approval');
     }
   };
 
@@ -259,15 +279,19 @@ export default function AdminPaymentsPage() {
                     <td className="p-3 text-center space-x-2">
                       <button
                         onClick={() => handleStatusUpdate(p.id, 'approved')}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                        title="Approve payment"
+                        aria-label="Approve payment"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded-lg transition-all"
                       >
-                        Approve
+                        <Check className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleStatusUpdate(p.id, 'rejected')}
-                        className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                        title="Reject payment"
+                        aria-label="Reject payment"
+                        className="bg-rose-600 hover:bg-rose-500 text-white p-2 rounded-lg transition-all"
                       >
-                        Reject
+                        <X className="h-4 w-4" />
                       </button>
                     </td>
                   </tr>
@@ -288,6 +312,7 @@ export default function AdminPaymentsPage() {
                 <th className="p-3">Email</th>
                 <th className="p-3">User ID</th>
                 <th className="p-3">Created</th>
+                <th className="p-3">Account Status</th>
                 <th className="p-3">New Password</th>
                 <th className="p-3">Actions</th>
               </tr>
@@ -298,6 +323,11 @@ export default function AdminPaymentsPage() {
                   <td className="p-3 text-xs text-cyan-300">{user.email || 'No email'}</td>
                   <td className="p-3 text-xs text-slate-500 font-mono">{user.id}</td>
                   <td className="p-3 text-xs text-slate-400">{new Date(user.created_at).toLocaleDateString()}</td>
+                  <td className="p-3">
+                    <span className={`rounded-md border px-2 py-1 text-[11px] font-bold uppercase ${user.is_approved ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-amber-500/30 bg-amber-500/10 text-amber-300'}`}>
+                      {user.is_approved ? 'Approved' : 'Pending'}
+                    </span>
+                  </td>
                   <td className="p-3 flex items-center gap-2">
                     <div className="relative w-44">
                       <input
@@ -333,6 +363,24 @@ export default function AdminPaymentsPage() {
                       className="rounded-lg bg-rose-600 p-2 text-white transition-colors hover:bg-rose-500"
                     >
                       <Trash2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAccountApproval(user, true)}
+                      title="Approve user account"
+                      aria-label="Approve user account"
+                      className="rounded-lg bg-emerald-600 p-2 text-white transition-colors hover:bg-emerald-500"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAccountApproval(user, false)}
+                      title="Reject user account"
+                      aria-label="Reject user account"
+                      className="rounded-lg bg-orange-600 p-2 text-white transition-colors hover:bg-orange-500"
+                    >
+                      <X className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>

@@ -2,7 +2,7 @@
 import { supabase } from "@/lib/supabase/supabase";
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Lock, Mail, User, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Lock, Mail, User, CheckCircle2, Eye, EyeOff, MessageCircle } from "lucide-react";
 
 export default function SignUpPage() {
   const [fullName, setFullName] = useState("");
@@ -36,28 +36,29 @@ export default function SignUpPage() {
   }
 };
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+      <div className="absolute top-[-12%] left-[-10%] w-[420px] h-[420px] bg-purple-600/20 rounded-full blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-[420px] h-[420px] bg-cyan-600/15 rounded-full blur-[130px] pointer-events-none" />
 
       {/* Main Container */}
-      <div className="w-full max-w-md bg-zinc-900/90 border border-zinc-800 rounded-3xl p-8 shadow-2xl space-y-6">
+      <div className="w-full max-w-md bg-slate-900/70 border border-white/10 rounded-3xl p-8 shadow-2xl shadow-purple-500/10 backdrop-blur-xl space-y-6">
         
         {/* Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-white mb-2">
-            <span className="bg-white text-black px-2 py-0.5 rounded-lg text-sm font-extrabold">ECHO</span>
-            <span>Clone</span>
+            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 p-[1px] rounded-lg"><span className="block bg-slate-950 px-2 py-0.5 rounded-[7px] text-sm font-extrabold">ECHO</span></span>
+            <span className="text-slate-100">Clone</span>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Create an Account</h1>
-          <p className="text-xs text-zinc-400">Get 10,000 free characters every month</p>
+          <h1 className="text-2xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">Create an Account</h1>
+          <p className="text-xs text-slate-400">Get 10,000 characters every month</p>
         </div>
 
         {/* Google OAuth Button */}
         <button
           onClick={handleGoogleSignUp}
           type="button"
-          className="w-full py-3 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/50 text-sm font-semibold flex items-center justify-center gap-3 transition-all"
+          className="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-sm font-semibold flex items-center justify-center gap-3 transition-all"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -171,7 +172,13 @@ export default function SignUpPage() {
         </div>
 
         {/* Footer Link */}
-        <p className="text-center text-xs text-zinc-500">
+        <div className="flex items-center justify-center pt-1">
+          <a href="https://wa.me/923253229649?text=Hello%20ABM%2C%20I%20need%20help%20with%20Echo%20Clone" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20" title="Contact ABM on WhatsApp">
+            <MessageCircle className="h-4 w-4" /> Contact (ABM)
+          </a>
+        </div>
+
+        <p className="text-center text-xs text-slate-500">
           Already have an account?{" "}
           <Link href="/login" className="text-white hover:underline font-semibold">
             Log In
