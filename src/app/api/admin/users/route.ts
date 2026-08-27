@@ -89,3 +89,24 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+export async function DELETE(request: NextRequest) {
+  if (!(await isAdmin(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const adminClient = getAdminClient();
+  if (!adminClient) {
+    return NextResponse.json({ error: "Server admin key is not configured" }, { status: 500 });
+  }
+
+  const { userId } = await request.json();
+  if (typeof userId !== "string" || !userId) {
+    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+  }
+
+  const { error } = await adminClient.auth.admin.deleteUser(userId);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  return NextResponse.json({ success: true });
+}

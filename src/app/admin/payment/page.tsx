@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Trash2 } from 'lucide-react';
 
 // Supabase Client Initialization
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -119,6 +119,27 @@ export default function AdminPaymentsPage() {
     if (response.ok) setNewPasswords((current) => ({ ...current, [userId]: '' }));
   };
 
+  const handleDeleteUser = async (user: AdminUser) => {
+    if (!window.confirm(`Delete ${user.email || 'this user'} permanently?`)) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch('/api/admin/users', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+      body: JSON.stringify({ userId: user.id }),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+      setNotice('User deleted successfully.');
+    } else {
+      setNotice(result.error || 'Unable to delete user');
+    }
+  };
+
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     const { error } = await supabase
       .from('payments')
@@ -128,6 +149,27 @@ export default function AdminPaymentsPage() {
     if (error) {
       setNotice('Error updating status: ' + error.message);
     } else {
+      if (newStatus === 'approved') {
+        const payment = payments.find((item) => item.id === id);
+        if (payment) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              total_characters: 10000,
+              used_characters: 0,
+              plan_name: 'Pro Plan',
+              plan_status: 'approved',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', payment.user_id);
+
+          if (profileError) {
+            setNotice('Payment approved, but quota reset failed: ' + profileError.message);
+            await fetchPayments();
+            return;
+          }
+        }
+      }
       setNotice(`Payment ${newStatus} successfully!`);
       fetchPayments(); // Refresh list
     }
@@ -247,7 +289,7 @@ export default function AdminPaymentsPage() {
                 <th className="p-3">User ID</th>
                 <th className="p-3">Created</th>
                 <th className="p-3">New Password</th>
-                <th className="p-3">Action</th>
+                <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -256,7 +298,7 @@ export default function AdminPaymentsPage() {
                   <td className="p-3 text-xs text-cyan-300">{user.email || 'No email'}</td>
                   <td className="p-3 text-xs text-slate-500 font-mono">{user.id}</td>
                   <td className="p-3 text-xs text-slate-400">{new Date(user.created_at).toLocaleDateString()}</td>
-                  <td className="p-3">
+                  <td className="p-3 flex items-center gap-2">
                     <div className="relative w-44">
                       <input
                         type={visiblePasswords[user.id] ? "text" : "password"}
@@ -282,6 +324,15 @@ export default function AdminPaymentsPage() {
                       className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg"
                     >
                       Set Password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUser(user)}
+                      title={`Delete ${user.email || 'user'}`}
+                      aria-label={`Delete ${user.email || 'user'}`}
+                      className="rounded-lg bg-rose-600 p-2 text-white transition-colors hover:bg-rose-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>

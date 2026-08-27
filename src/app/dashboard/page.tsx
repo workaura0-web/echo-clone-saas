@@ -79,13 +79,11 @@ export default function DashboardPage() {
     );
   }
 
-  const remainingCharacters = profile 
-    ? profile.total_characters - profile.used_characters 
-    : 0;
+  const totalCharacters = Math.max(10000, profile?.total_characters || 0);
+  const usedCharacters = profile?.used_characters || 0;
+  const remainingCharacters = Math.max(0, totalCharacters - usedCharacters);
 
-  const usagePercentage = profile?.total_characters 
-    ? Math.min(100, Math.round((profile.used_characters / profile.total_characters) * 100))
-    : 0;
+  const usagePercentage = Math.min(100, Math.round((usedCharacters / totalCharacters) * 100));
 
   return (
     <div className="min-h-screen bg-slate-950 text-white relative flex flex-col justify-between overflow-hidden p-4 md:p-8 font-sans">
@@ -111,6 +109,13 @@ export default function DashboardPage() {
               className="px-4 py-2.5 rounded-xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 hover:scale-[1.02] active:scale-[0.98] text-white text-xs flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all"
             >
               <Plus className="w-4 h-4" /> Create Voice
+            </button>
+
+            <button
+              onClick={() => router.push("/checkout?plan=pro")}
+              className="px-4 py-2.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all"
+            >
+              <CreditCard className="w-4 h-4" /> Upgrade Plan
             </button>
 
             {/* Logout Button */}
@@ -191,7 +196,7 @@ export default function DashboardPage() {
               {remainingCharacters.toLocaleString()}
             </p>
             <p className="text-xs text-slate-500">
-              Out of {profile?.total_characters?.toLocaleString() || 0} total monthly allocation.
+              Out of {totalCharacters.toLocaleString()} total monthly allocation.
             </p>
           </div>
 
@@ -204,7 +209,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="text-3xl font-black text-slate-200">
-              {profile?.used_characters?.toLocaleString() || 0}
+              {usedCharacters.toLocaleString()}
             </p>
             <p className="text-xs text-slate-500">Characters processed during this billing period.</p>
           </div>

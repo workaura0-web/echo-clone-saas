@@ -182,7 +182,7 @@ export default function TTSStudio() {
   // User & Plan State
   const [user, setUser] = useState<User | null>(null);
   const [isProUser, setIsProUser] = useState(false);
-  const [characterLimit, setCharacterLimit] = useState(100);
+  const [characterLimit, setCharacterLimit] = useState(10000);
 
   // Audio States
   const [selectedVoice, setSelectedVoice] = useState(VOICES[0].id);
@@ -225,11 +225,11 @@ export default function TTSStudio() {
           profile?.is_approved === true;
 
         setIsProUser(planActive);
-        setCharacterLimit(planActive ? 10000 : 100);
+        setCharacterLimit(10000);
       } else {
         setUser(null);
         setIsProUser(false);
-        setCharacterLimit(100);
+        setCharacterLimit(10000);
         router.replace("/login");
       }
     };
@@ -409,8 +409,8 @@ export default function TTSStudio() {
             <div className="flex items-center gap-3">
               <span className="text-amber-400 font-bold text-xs px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30">Free</span>
               <div>
-                <p className="text-sm font-bold">Free Trial Active (100 Characters Limit)</p>
-                <p className="text-xs opacity-80">Subscribe to Pro plan to get 10,000 characters limit.</p>
+                <p className="text-sm font-bold">Free Trial Active (10,000 Characters Limit)</p>
+                <p className="text-xs opacity-80">Generate up to 10,000 characters per script.</p>
               </div>
             </div>
             <button 
