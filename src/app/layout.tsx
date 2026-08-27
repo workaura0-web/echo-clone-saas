@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Echo Clone SaaS",
   description: "AI Voice Generator and Voice Cloning Platform",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/echo-icon.svg",
+    apple: "/echo-icon.svg",
+  },
 };
 
 export default function RootLayout({

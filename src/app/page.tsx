@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { 
   Sparkles, 
@@ -8,10 +9,48 @@ import {
   ShieldCheck, 
   Mic, 
   Check, 
-  Heart
+  Heart,
+  Download
 } from "lucide-react";
 
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 export default function Home() {
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [installHelp, setInstallHelp] = useState(false);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+
+    const standalone = window.matchMedia("(display-mode: standalone)").matches ||
+      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
+    setIsInstalled(standalone);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) {
+      setInstallHelp(true);
+      return;
+    }
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white relative flex flex-col justify-between overflow-hidden font-sans">
       
@@ -54,7 +93,21 @@ export default function Home() {
             >
               Explore Samples
             </Link>
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="px-7 py-3.5 rounded-2xl font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-200 text-sm border border-cyan-400/30 backdrop-blur-md transition-all flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Install App
+              </button>
+            )}
           </div>
+          {installHelp && !isInstalled && (
+            <p className="mx-auto max-w-md text-xs text-cyan-200/80">
+              Chrome menu se <strong>Install Echo Clone</strong> select karein. Install option thori der mein available ho sakta hai.
+            </p>
+          )}
         </div>
 
         {/* Features Section */}
