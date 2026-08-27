@@ -178,7 +178,6 @@ export default function AdminPaymentsPage() {
               total_characters: 10000,
               used_characters: 0,
               plan_name: 'Pro Plan',
-              plan_status: 'approved',
               updated_at: new Date().toISOString(),
             })
             .eq('id', payment.user_id);
