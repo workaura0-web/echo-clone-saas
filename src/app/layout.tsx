@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     icon: "/echo-icon.svg",
     apple: "/echo-icon.svg",
   },
+  appleWebApp: {
+    capable: true,
+    title: "Echo Clone",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({

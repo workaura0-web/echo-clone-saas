@@ -105,7 +105,7 @@ export default function Home() {
           </div>
           {installHelp && !isInstalled && (
             <p className="mx-auto max-w-md text-xs text-cyan-200/80">
-              Chrome menu se <strong>Install Echo Clone</strong> select karein. Install option thori der mein available ho sakta hai.
+              Android Chrome: menu se <strong>Install Echo Clone</strong> select karein. iPhone: Share button se <strong>Add to Home Screen</strong> choose karein.
             </p>
           )}
         </div>

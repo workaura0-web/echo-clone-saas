@@ -4,6 +4,8 @@
   "description": "Create natural AI voiceovers with Echo Clone.",
   "start_url": "/",
   "display": "standalone",
+  "scope": "/",
+  "prefer_related_applications": false,
   "background_color": "#020617",
   "theme_color": "#7c3aed",
   "orientation": "portrait-primary",
