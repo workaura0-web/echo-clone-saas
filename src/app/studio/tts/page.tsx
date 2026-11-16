@@ -15,6 +15,7 @@ import {
   syncUserLifecycleNotifications,
 } from "@/lib/firebase/db";
 import { cacheAudioClip } from "@/lib/audio/audioCache";
+import { downloadAudioAsMp3 } from "@/lib/audio/downloadMp3";
 import {
   computePackageStatus,
   getPlanDefinition,
@@ -95,7 +96,7 @@ export default function TTSStudio() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioEngine, setAudioEngine] = useState<"gemini-tts" | "web-speech-fallback">("gemini-tts");
+  const [audioEngine, setAudioEngine] = useState<"neural-mp3" | "gemini-tts" | "web-speech-fallback">("neural-mp3");
   const [isDownloading, setIsDownloading] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success" | "warning"; text: string } | null>(null);
 
@@ -251,7 +252,7 @@ export default function TTSStudio() {
         }),
       });
       const data = await res.json();
-      if (res.ok && data.engine === "gemini-tts" && data.audioUrl) {
+      if (res.ok && data.audioUrl) {
         previewCacheRef.current.set(cacheKey, data.audioUrl);
         const audio = new Audio(data.audioUrl);
         previewAudioRef.current = audio;
@@ -365,19 +366,19 @@ export default function TTSStudio() {
       setSegments(finalSegments);
 
       let finalAudioUrl: string | null = null;
-      const engineUsed: "gemini-tts" | "web-speech-fallback" =
-        result.engine === "gemini-tts" && result.audioUrl
+      const engineUsed: "neural-mp3" | "gemini-tts" | "web-speech-fallback" = result.audioUrl
+        ? result.engine === "gemini-tts"
           ? "gemini-tts"
-          : "web-speech-fallback";
+          : "neural-mp3"
+        : "web-speech-fallback";
 
       setAudioEngine(engineUsed);
 
-      if (engineUsed === "gemini-tts" && result.audioUrl) {
+      if (engineUsed !== "web-speech-fallback" && result.audioUrl) {
         finalAudioUrl = result.audioUrl;
         setAudioUrl(finalAudioUrl);
         setHasAudio(true);
 
-        // Auto-play neural WAV output cleanly
         setTimeout(() => {
           if (audioRef.current && finalAudioUrl) {
             audioRef.current.src = finalAudioUrl;
@@ -385,7 +386,7 @@ export default function TTSStudio() {
           }
         }, 80);
       } else {
-        // Multi-segment expressive Speech playback (no fake sine-wave WAV saved)
+        // Fallback browser speech only if server neural engine is unreachable
         setAudioUrl(null);
         setHasAudio(true);
         setIsPlaying(true);
@@ -440,8 +441,8 @@ export default function TTSStudio() {
       setNotice({
         type: "success",
         text:
-          engineUsed === "gemini-tts"
-            ? "Neural multi-emotion WAV audio generated and saved to your Library."
+          engineUsed !== "web-speech-fallback"
+            ? `${currentVoice.name} (${currentVoice.gender}) neural MP3 generated and saved to your Library.`
             : "Expressive segmented speech generated and saved to your Library.",
       });
     } catch (error) {
@@ -455,7 +456,7 @@ export default function TTSStudio() {
   };
 
   const handleTogglePlay = () => {
-    if (audioEngine === "gemini-tts" && audioRef.current && audioUrl) {
+    if (audioEngine !== "web-speech-fallback" && audioRef.current && audioUrl) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
@@ -496,15 +497,8 @@ export default function TTSStudio() {
     if (!audioUrl) return;
     try {
       setIsDownloading(true);
-      const a = document.createElement("a");
-      a.href = audioUrl;
-      const safeName = (title.trim() || currentVoice.name)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_");
-      a.download = `${safeName}_${currentAccent.code.toLowerCase()}.wav`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const baseName = `${title.trim() || currentVoice.name}_${currentAccent.code.toLowerCase()}`;
+      await downloadAudioAsMp3(audioUrl, baseName);
     } finally {
       setIsDownloading(false);
     }
@@ -969,12 +963,12 @@ export default function TTSStudio() {
               <div className="rounded-xl border border-violet-500/40 bg-slate-900/80 p-5 space-y-4">
                 <audio
                   ref={audioRef}
-                  src={audioEngine === "gemini-tts" ? audioUrl ?? undefined : undefined}
+                  src={audioEngine !== "web-speech-fallback" ? audioUrl ?? undefined : undefined}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                   onEnded={() => setIsPlaying(false)}
-                  controls={audioEngine === "gemini-tts"}
-                  className={audioEngine === "gemini-tts" ? "w-full h-10" : "hidden"}
+                  controls={audioEngine !== "web-speech-fallback"}
+                  className={audioEngine !== "web-speech-fallback" ? "w-full h-10" : "hidden"}
                 />
 
                 <div className="flex flex-wrap items-center justify-between gap-4">
@@ -996,7 +990,7 @@ export default function TTSStudio() {
                       </h4>
                       <p className="text-xs text-slate-400">
                         {currentTone.label} · {currentAccent.country} ·{" "}
-                        {audioEngine === "gemini-tts" ? "Neural HD WAV" : "Expressive Browser Voice"}
+                        {audioEngine !== "web-speech-fallback" ? "Neural Studio MP3" : "Expressive Browser Voice"}
                       </p>
                     </div>
                   </div>
@@ -1009,7 +1003,7 @@ export default function TTSStudio() {
                       className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white flex items-center gap-2 transition-colors"
                     >
                       <Download className="w-3.5 h-3.5 text-sky-400" />
-                      {isDownloading ? "Preparing..." : "Download WAV"}
+                      {isDownloading ? "Preparing MP3..." : "Download MP3"}
                     </button>
                   ) : (
                     <span className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-[11px] text-slate-400">

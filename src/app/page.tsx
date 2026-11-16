@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { PLANS, PlanId } from "@/lib/plans";
@@ -61,7 +61,10 @@ export default function Home() {
   // Interactive Story & Accent Demo State
   const [demoAccent, setDemoAccent] = useState("en-US");
   const [isDemoPlaying, setIsDemoPlaying] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [activeSentenceIdx, setActiveSentenceIdx] = useState<number | null>(null);
+  const demoAudioRef = useRef<HTMLAudioElement | null>(null);
+  const demoCacheRef = useRef<Map<string, string>>(new Map());
 
   const storySample = SAMPLE_TEMPLATES[0].text;
   const demoSegments = analyzeScriptEmotionsLocally(storySample, "story");
@@ -86,6 +89,7 @@ export default function Home() {
 
     return () => {
       stopSpeaking();
+      if (demoAudioRef.current) demoAudioRef.current.pause();
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
@@ -98,12 +102,79 @@ export default function Home() {
     setInstallPrompt(null);
   };
 
-  const handleToggleDemo = () => {
-    if (isDemoPlaying) {
-      stopSpeaking();
+  const stopDemoAudio = () => {
+    stopSpeaking();
+    if (demoAudioRef.current) {
+      demoAudioRef.current.pause();
+      demoAudioRef.current.currentTime = 0;
+    }
+    setIsDemoPlaying(false);
+    setActiveSentenceIdx(null);
+  };
+
+  const playDemoMp3 = (audioUrl: string) => {
+    const audio = new Audio(audioUrl);
+    demoAudioRef.current = audio;
+    setIsDemoPlaying(true);
+
+    audio.ontimeupdate = () => {
+      if (!audio.duration || demoSegments.length === 0) return;
+      const ratio = audio.currentTime / audio.duration;
+      const idx = Math.min(
+        demoSegments.length - 1,
+        Math.floor(ratio * demoSegments.length)
+      );
+      setActiveSentenceIdx(idx);
+    };
+    audio.onended = () => {
       setIsDemoPlaying(false);
       setActiveSentenceIdx(null);
+    };
+    audio.onerror = () => {
+      setIsDemoPlaying(false);
+      setActiveSentenceIdx(null);
+    };
+    audio.play().catch(() => {
+      setIsDemoPlaying(false);
+      setActiveSentenceIdx(null);
+    });
+  };
+
+  const handleToggleDemo = async () => {
+    if (isDemoPlaying) {
+      stopDemoAudio();
       return;
+    }
+
+    const cached = demoCacheRef.current.get(demoAccent);
+    if (cached) {
+      playDemoMp3(cached);
+      return;
+    }
+
+    setIsDemoLoading(true);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: storySample,
+          voiceId: VOICES[0].id,
+          accentId: demoAccent,
+          toneId: "story",
+          customSegments: demoSegments,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.audioUrl) {
+        demoCacheRef.current.set(demoAccent, data.audioUrl);
+        playDemoMp3(data.audioUrl);
+        return;
+      }
+    } catch {
+      // Fallback below
+    } finally {
+      setIsDemoLoading(false);
     }
 
     setIsDemoPlaying(true);
@@ -176,7 +247,7 @@ export default function Home() {
                 <p className="text-xs text-slate-400 mt-0.5">Dynamic Emotions</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-white font-mono tabular-nums">WAV</p>
+                <p className="text-2xl font-bold text-white font-mono tabular-nums">MP3</p>
                 <p className="text-xs text-slate-400 mt-0.5">Studio Export</p>
               </div>
             </div>
@@ -197,9 +268,12 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleToggleDemo}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
+                  disabled={isDemoLoading}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
                 >
-                  {isDemoPlaying ? (
+                  {isDemoLoading ? (
+                    <>Loading Demo...</>
+                  ) : isDemoPlaying ? (
                     <>
                       <Pause className="w-3.5 h-3.5" /> Stop Preview
                     </>
@@ -424,7 +498,7 @@ export default function Home() {
               Frequently Asked Questions
             </h2>
             <p className="text-sm text-slate-400">
-              Clear answers about regional accents, multi-emotion storytelling, WAV exports, and synced creator plans.
+              Clear answers about regional accents, multi-emotion storytelling, MP3 exports, and synced creator plans.
             </p>
           </div>
 

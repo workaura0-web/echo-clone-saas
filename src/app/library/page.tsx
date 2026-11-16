@@ -9,9 +9,11 @@ import {
   getUserGenerations,
 } from "@/lib/firebase/db";
 import {
+  cacheAudioClip,
   getCachedAudioClip,
   removeCachedAudioClip,
 } from "@/lib/audio/audioCache";
+import { downloadAudioAsMp3 } from "@/lib/audio/downloadMp3";
 import { EMOTION_PROFILES, VOICES } from "@/lib/audio/accentsAndVoices";
 import {
   AnalyzedSegment,
@@ -99,22 +101,47 @@ export default function LibraryPage() {
     }
 
     stopAllPlayback();
+    setErrorMsg(null);
     setPlayingId(item.id);
 
-    // 1. Check cached real WAV audio first
-    const cachedUrl = await getCachedAudioClip(item.id);
-    if (cachedUrl && item.engine === "gemini-tts" && audioRef.current) {
-      audioRef.current.src = cachedUrl;
+    // 1. Check locally cached neural MP3/WAV audio first
+    let playableUrl = await getCachedAudioClip(item.id);
+
+    // 2. If not cached (or previously generated as fallback), synthesize real neural MP3 on demand
+    const segs = parseSegments(item);
+    if (!playableUrl) {
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: item.text,
+            voiceId: item.voiceId,
+            accentId: item.accentId,
+            toneId: item.toneId,
+            customSegments: segs,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.audioUrl) {
+          playableUrl = data.audioUrl;
+          await cacheAudioClip(item.id, data.audioUrl);
+        }
+      } catch {
+        // Fall through cleanly
+      }
+    }
+
+    if (playableUrl && audioRef.current) {
+      audioRef.current.src = playableUrl;
       audioRef.current.onended = () => setPlayingId(null);
       audioRef.current.onerror = () => setPlayingId(null);
       audioRef.current.play().catch(() => setPlayingId(null));
       return;
     }
 
-    // 2. Otherwise replay with exact voice, accent, and multi-emotion segments
+    // 3. Last-resort local speech fallback
     const voice = VOICES.find((v) => v.id === item.voiceId) || VOICES[0];
-    const segs = parseSegments(item);
-
     stopFallbackRef.current = speakSegmentsExpressively(segs, voice, {
       accentId: item.accentId,
       onComplete: () => setPlayingId(null),
@@ -142,21 +169,16 @@ export default function LibraryPage() {
           }),
         });
         const data = await res.json();
-        if (res.ok && data.engine === "gemini-tts" && data.audioUrl) {
+        if (res.ok && data.audioUrl) {
           url = data.audioUrl;
+          await cacheAudioClip(item.id, data.audioUrl);
         }
       }
 
       if (url) {
-        const a = document.createElement("a");
-        a.href = url;
-        const safeTitle = item.title.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-        a.download = `${safeTitle || "echo_clip"}.wav`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        await downloadAudioAsMp3(url, item.title || "echo_clip");
       } else {
-        setErrorMsg("WAV file export requires server neural TTS (Play Audio still speaks all emotions live).");
+        setErrorMsg("Could not synthesize MP3 audio right now. Please try again.");
       }
     } finally {
       setDownloadingId(null);
@@ -365,7 +387,7 @@ export default function LibraryPage() {
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors"
                     >
                       <Download className="w-3.5 h-3.5 text-sky-400" />
-                      {downloadingId === item.id ? "Preparing..." : "Download WAV"}
+                      {downloadingId === item.id ? "Preparing MP3..." : "Download MP3"}
                     </button>
                   </div>
                 </div>
