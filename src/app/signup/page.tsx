@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signupWithEmail, signInWithGoogle } from "@/lib/firebase/auth";
+import { signupWithEmail, signInWithGoogle, formatAuthError } from "@/lib/firebase/auth";
 import { ArrowRight, Lock, Mail, User, CheckCircle2, Eye, EyeOff, MessageCircle } from "lucide-react";
 
 export default function SignUpPage() {
@@ -24,12 +24,7 @@ export default function SignUpPage() {
       await signupWithEmail(email.trim(), password, fullName);
       router.replace("/studio/tts");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Failed to create account";
-      if (msg.includes("operation-not-allowed")) {
-        setErrorMessage("Email/password sign-up is currently disabled. Please use Continue with Google above.");
-      } else {
-        setErrorMessage(msg);
-      }
+      setErrorMessage(formatAuthError(error, "Failed to create account"));
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +37,7 @@ export default function SignUpPage() {
       await signInWithGoogle();
       router.replace("/studio/tts");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Google sign-in cancelled or failed");
+      setErrorMessage(formatAuthError(error, "Google sign-in cancelled or failed"));
     } finally {
       setIsLoading(false);
     }

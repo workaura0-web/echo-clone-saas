@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { loginWithEmail, signInWithGoogle, resetPassword } from "@/lib/firebase/auth";
+import { loginWithEmail, signInWithGoogle, resetPassword, formatAuthError } from "@/lib/firebase/auth";
 import { Sparkles, Mail, Lock, ArrowRight, Heart, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
@@ -25,12 +25,7 @@ export default function LoginPage() {
       await loginWithEmail(email.trim(), password);
       router.replace("/studio/tts");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Failed to sign in";
-      if (msg.includes("operation-not-allowed")) {
-        setErrorMessage("Email/password sign-in is disabled on this project. Please use Continue with Google.");
-      } else {
-        setErrorMessage(msg);
-      }
+      setErrorMessage(formatAuthError(error, "Failed to sign in"));
     } finally {
       setLoading(false);
     }
@@ -43,7 +38,7 @@ export default function LoginPage() {
       await signInWithGoogle();
       router.replace("/studio/tts");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Google sign-in cancelled or failed");
+      setErrorMessage(formatAuthError(error, "Google sign-in cancelled or failed"));
     } finally {
       setLoading(false);
     }
@@ -63,7 +58,7 @@ export default function LoginPage() {
       await resetPassword(normalizedEmail);
       setNotice("Password reset email sent. Check your inbox.");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Could not send reset email");
+      setErrorMessage(formatAuthError(error, "Could not send reset email"));
     } finally {
       setLoading(false);
     }

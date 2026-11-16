@@ -229,6 +229,30 @@ export async function logOut() {
   return await signOut(auth);
 }
 
+export function formatAuthError(error: unknown, fallback = "Authentication failed"): string {
+  const raw = error instanceof Error ? error.message : String(error || "");
+  if (raw.includes("auth/unauthorized-domain")) {
+    const host = typeof window !== "undefined" ? window.location.hostname : "this domain";
+    return `Domain "${host}" is not authorized in Firebase Authentication. Add "${host}" under Firebase Console → Authentication → Settings → Authorized domains.`;
+  }
+  if (raw.includes("auth/operation-not-allowed")) {
+    return "Email/password sign-in is currently disabled in Firebase Console. Please use Continue with Google or enable Email/Password in Firebase Authentication.";
+  }
+  if (raw.includes("auth/popup-closed-by-user")) {
+    return "Sign-in popup was closed before completing login. Please try again.";
+  }
+  if (raw.includes("auth/popup-blocked")) {
+    return "Your browser blocked the Google sign-in popup. Please allow popups for this site and try again.";
+  }
+  if (raw.includes("auth/invalid-credential") || raw.includes("auth/wrong-password") || raw.includes("auth/user-not-found")) {
+    return "Invalid email or password. Please double-check your credentials or continue with Google.";
+  }
+  if (raw.includes("auth/email-already-in-use")) {
+    return "An account with this email already exists. Try signing in instead.";
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 export async function trackCharacterUsage(userId: string, count: number) {
   try {
     const profileRef = doc(db, "profiles", userId);
