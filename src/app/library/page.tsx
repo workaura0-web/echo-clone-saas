@@ -16,7 +16,6 @@ import { EMOTION_PROFILES, VOICES } from "@/lib/audio/accentsAndVoices";
 import {
   AnalyzedSegment,
   analyzeScriptEmotionsLocally,
-  generateFallbackWavUrl,
   speakSegmentsExpressively,
   stopSpeaking,
 } from "@/lib/audio/speechSynth";
@@ -126,6 +125,7 @@ export default function LibraryPage() {
   const handleDownload = async (item: GenerationRecord) => {
     try {
       setDownloadingId(item.id);
+      setErrorMsg(null);
       let url = await getCachedAudioClip(item.id);
 
       if (!url) {
@@ -142,10 +142,8 @@ export default function LibraryPage() {
           }),
         });
         const data = await res.json();
-        if (res.ok && data.audioUrl) {
+        if (res.ok && data.engine === "gemini-tts" && data.audioUrl) {
           url = data.audioUrl;
-        } else {
-          url = await generateFallbackWavUrl(segs, item.durationSeconds || 5);
         }
       }
 
@@ -157,6 +155,8 @@ export default function LibraryPage() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+      } else {
+        setErrorMsg("WAV file export requires server neural TTS (Play Audio still speaks all emotions live).");
       }
     } finally {
       setDownloadingId(null);

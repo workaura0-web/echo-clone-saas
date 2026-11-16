@@ -19,6 +19,28 @@ const VALID_EMOTIONS: EmotionType[] = [
   "whispering",
 ];
 
+function extractBase64AudioFromResponse(response: unknown): string | undefined {
+  const res = response as {
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{
+          inlineData?: { data?: string; mimeType?: string };
+        }>;
+      };
+    }>;
+  };
+
+  const parts = res?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return undefined;
+
+  for (const part of parts) {
+    if (part?.inlineData?.data) {
+      return part.inlineData.data;
+    }
+  }
+  return undefined;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -30,6 +52,7 @@ export async function POST(req: NextRequest) {
       speed = 1,
       pitch = 1,
       customSegments,
+      isPreview = false,
     } = body as {
       text?: string;
       voiceId?: string;
@@ -38,6 +61,7 @@ export async function POST(req: NextRequest) {
       speed?: number;
       pitch?: number;
       customSegments?: AnalyzedSegment[];
+      isPreview?: boolean;
     };
 
     if (!text || typeof text !== "string" || text.trim() === "") {
@@ -64,7 +88,6 @@ export async function POST(req: NextRequest) {
         ? customSegments
         : analyzeScriptEmotionsLocally(text, tone.id);
 
-    // If no Gemini key is configured in environment, return rich segmented Web Speech fallback
     if (!apiKey || apiKey.trim() === "") {
       return NextResponse.json({
         success: true,
@@ -86,9 +109,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Step 1: For Story / Dramatic modes (when user didn't pass custom overrides),
-    // analyze every sentence's exact emotion using gemini-4-hydrogen
+    // Step 1: Analyze sentence emotions in Story/Dramatic mode (skip for short voice previews)
     if (
+      !isPreview &&
       (!Array.isArray(customSegments) || customSegments.length === 0) &&
       (tone.id === "story" || tone.id === "dramatic")
     ) {
@@ -98,7 +121,7 @@ export async function POST(req: NextRequest) {
           contents: `Analyze this script sentence by sentence for a voice actor. Classify each sentence's dominant emotion from: calm, angry, laughing, humorous, sad, excited, whispering. Keep the exact original sentence text untouched.\n\nScript:\n${text}`,
           config: {
             systemInstruction:
-              "You are an expert voice acting director. Segment the provided script into natural sentences/clauses preserving exact wording, and tag each segment with the most fitting emotion (angry for rage/shouting, laughing for laughter/joy, humorous for funny/witty/comedy, sad for grief/sorrow, whispering for hushed/secret, excited for enthusiasm, calm for neutral narrative).",
+              "You are an expert voice acting director. Segment the provided script into natural sentences preserving exact wording, and tag each segment with the most fitting emotion (angry for rage/shouting, laughing for laughter/joy, humorous for funny/witty/comedy, sad for grief/sorrow, whispering for hushed/secret, excited for enthusiasm, calm for neutral narrative).",
             responseMimeType: "application/json",
             responseSchema: {
               type: Type.ARRAY,
@@ -132,9 +155,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Step 2: Compose directed script for Gemini TTS with regional accent + per-sentence emotional cues
+    // Step 2: Compose directed script with vocal bursts and emotional acting cues
     const directedScript =
-      tone.id === "story" || tone.id === "dramatic"
+      !isPreview && (tone.id === "story" || tone.id === "dramatic")
         ? segments
             .map((seg) => {
               const profile = EMOTION_PROFILES[seg.emotion] || EMOTION_PROFILES.calm;
@@ -156,61 +179,67 @@ export async function POST(req: NextRequest) {
 
     const pitchDescriptor =
       Number(pitch) > 1.12
-        ? "Use a slightly brighter, higher vocal register."
+        ? "Use a brighter, slightly higher vocal register."
         : Number(pitch) < 0.88
         ? "Use a deeper, richer lower vocal register."
         : "";
 
-    const styleInstruction = `${accent.styleDirection} ${tone.styleDirection} ${paceDescriptor} ${pitchDescriptor}`.trim();
+    const styleInstruction = `${voice.voiceDirection} ${accent.styleDirection} ${
+      isPreview ? "Deliver a clear, charismatic studio voice sample." : tone.styleDirection
+    } ${paceDescriptor} ${pitchDescriptor}`.trim();
 
-    try {
-      const ttsResponse = await ai.models.generateContent({
-        model: tone.ttsModel,
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: directedScript,
-                speechMetadata: {
-                  style: styleInstruction,
+    // Step 3: Resilient multi-model TTS chain (3.8-flash-tts -> 3.8-flash-lite-tts -> 2.5-flash-preview-tts)
+    const candidateModels: Array<{ model: string; useSpeechMetadata: boolean }> = [
+      { model: isPreview ? "gemini-3.8-flash-lite-tts" : tone.ttsModel, useSpeechMetadata: true },
+      { model: "gemini-3.8-flash-lite-tts", useSpeechMetadata: false },
+      { model: "gemini-2.5-flash-preview-tts", useSpeechMetadata: false },
+    ];
+
+    for (const attempt of candidateModels) {
+      try {
+        const partPayload = attempt.useSpeechMetadata
+          ? {
+              text: directedScript,
+              speechMetadata: { style: styleInstruction },
+            }
+          : {
+              text: `Voice Direction: ${styleInstruction}\n\nSpeak naturally:\n${directedScript}`,
+            };
+
+        const ttsResponse = await ai.models.generateContent({
+          model: attempt.model,
+          contents: [{ role: "user", parts: [partPayload] }],
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: voice.geminiVoice,
                 },
-              },
-            ],
-          },
-        ],
-        config: {
-          responseModalities: ["AUDIO"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: voice.geminiVoice,
               },
             },
           },
-        },
-      });
-
-      const base64Audio =
-        ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-      if (base64Audio) {
-        return NextResponse.json({
-          success: true,
-          engine: "gemini-tts",
-          audioUrl: `data:audio/wav;base64,${base64Audio}`,
-          segments,
-          durationSeconds,
-          voiceName: voice.name,
-          accentLabel: accent.label,
-          toneLabel: tone.label,
         });
+
+        const base64Audio = extractBase64AudioFromResponse(ttsResponse);
+        if (base64Audio) {
+          return NextResponse.json({
+            success: true,
+            engine: "gemini-tts",
+            audioUrl: `data:audio/wav;base64,${base64Audio}`,
+            segments,
+            durationSeconds,
+            voiceName: voice.name,
+            accentLabel: accent.label,
+            toneLabel: tone.label,
+          });
+        }
+      } catch (err) {
+        console.warn(`Gemini TTS attempt (${attempt.model}) failed:`, err);
       }
-    } catch (ttsError) {
-      console.warn("Gemini TTS error, using expressive Web Speech fallback:", ttsError);
     }
 
-    // Fallback if Gemini audio generation hits quota or unavailable
+    // Fallback when Gemini audio generation is unavailable or quota-limited
     return NextResponse.json({
       success: true,
       engine: "web-speech-fallback",

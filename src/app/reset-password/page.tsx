@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase/auth";
 import { updatePassword } from "firebase/auth";
@@ -49,7 +50,15 @@ export default function ResetPasswordPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6 font-sans">
       <form onSubmit={handleSubmit} className="w-full max-w-md space-y-5 rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur-xl p-6 shadow-2xl">
-        <div>
+        <div className="space-y-2">
+          <Image
+            src="/echo-icon-192.png"
+            alt="Echo Clone Logo"
+            width={40}
+            height={40}
+            referrerPolicy="no-referrer"
+            className="w-10 h-10 rounded-xl border border-violet-500/40 object-cover"
+          />
           <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">Set New Password</h1>
           <p className="mt-1 text-sm text-slate-400">Choose a new password for your account.</p>
         </div>

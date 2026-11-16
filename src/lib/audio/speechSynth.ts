@@ -15,7 +15,9 @@ export interface AnalyzedSegment {
   cue?: string;
 }
 
-// Local deterministic sentence-by-sentence emotion detector (instant preview & zero-key fallback)
+const URDU_ARABIC_REGEX = /[\u0600-\u06FF]/;
+
+// Local deterministic sentence-by-sentence emotion detector (English + Roman Urdu + Urdu script)
 export function analyzeScriptEmotionsLocally(
   text: string,
   toneId: string
@@ -39,21 +41,24 @@ export function analyzeScriptEmotionsLocally(
 
     const lower = sentence.toLowerCase();
 
-    // Angry / Intense indicators (English + Roman Urdu)
+    // Angry / Intense indicators (English + Roman Urdu + Urdu)
     if (
-      /\b(angry|furious|shout|shouted|yell|yelled|slam|slammed|how dare|hate|liar|lie|stop|never|gusse|gussa|bas bhi|chilla|bewakoof|nafrat)\b/.test(
+      /\b(angry|furious|shout|shouted|yell|yelled|slam|slammed|how dare|hate|liar|lie|stop|never|gusse|gussa|bas bhi|chilla|bewakoof|nafrat|khabardar|niklo)\b/.test(
         lower
       ) ||
-      (sentence.includes("!") && /\b(dare|hell|damn|leave|get out|enough|nahi|mat)\b/.test(lower))
+      /(غصے|غصہ|خبردار|بکواس|چلایا|نفرت|نکلو|جھوٹ)/.test(sentence) ||
+      (sentence.includes("!") &&
+        /\b(dare|hell|damn|leave|get out|enough|nahi|mat)\b/.test(lower))
     ) {
       return { text: sentence, emotion: "angry", cue: "intense sharp tone" };
     }
 
     // Laughing / Joyful indicators
     if (
-      /\b(laugh|laughed|laughing|haha|hehe|lol|chuckle|giggle|burst out|huns|hansa|hansi|qahqaha|muskura)\b/.test(
+      /\b(laugh|laughed|laughing|haha|hehe|lol|chuckle|giggle|burst out|huns|hansa|hansi|qahqaha|muskura|haste)\b/.test(
         lower
-      )
+      ) ||
+      /(ہنس|قہقہہ|مسکرا|خوشی)/.test(sentence)
     ) {
       return { text: sentence, emotion: "laughing", cue: "warm chuckle" };
     }
@@ -62,16 +67,18 @@ export function analyzeScriptEmotionsLocally(
     if (
       /\b(funny|funniest|hilarious|joke|comedy|ridiculous|disaster|silly|weird|absurd|clown|kitten|namak|mazaq|mazahiya|lateefa)\b/.test(
         lower
-      )
+      ) ||
+      /(مذاق|مزاحیہ|لطیفہ|مزاح)/.test(sentence)
     ) {
       return { text: sentence, emotion: "humorous", cue: "playful amused tone" };
     }
 
     // Sad / Melancholic indicators
     if (
-      /\b(sad|cry|cried|tears|sorry|wish|miss|lonely|heartbroken|grief|rain|lost|goodbye|udaas|dukh|afsos|rona|ansoo|yaad|tanha)\b/.test(
+      /\b(sad|cry|cried|tears|sorry|wish|miss|lonely|heartbroken|grief|rain|lost|goodbye|udaas|dukh|afsos|rona|ansoo|yaad|tanha|khamoshi)\b/.test(
         lower
-      )
+      ) ||
+      /(اداس|دکھ|افسوس|آنسو|رونا|تنہا|یادیں|غم)/.test(sentence)
     ) {
       return { text: sentence, emotion: "sad", cue: "soft sorrowful cadence" };
     }
@@ -80,13 +87,20 @@ export function analyzeScriptEmotionsLocally(
     if (
       /\b(whisper|whispered|softly|quietly|secret|shadow|dark|hush|shh|ahista|chupke|raaz)\b/.test(
         lower
-      )
+      ) ||
+      /(سرگوشی|آہستہ|چپکے|راز|اندھیرا)/.test(sentence)
     ) {
       return { text: sentence, emotion: "whispering", cue: "hushed suspense" };
     }
 
     // Excited / Enthusiastic indicators
-    if (sentence.includes("!") || /\b(amazing|incredible|wow|breakthrough|victory|celebrate|waah|kamaal)\b/.test(lower)) {
+    if (
+      sentence.includes("!") ||
+      /\b(amazing|incredible|wow|breakthrough|victory|celebrate|waah|kamaal|zindabad|shabash)\b/.test(
+        lower
+      ) ||
+      /(واہ|کمال|شاباش|شاندار|زبردست)/.test(sentence)
+    ) {
       return { text: sentence, emotion: "excited", cue: "energetic delivery" };
     }
 
@@ -94,9 +108,118 @@ export function analyzeScriptEmotionsLocally(
   });
 }
 
+// Wait briefly for browser SpeechSynthesis voices (fixes empty array on first Chrome call)
+export async function waitForBrowserVoices(timeoutMs = 450): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    return [];
+  }
+
+  const immediate = window.speechSynthesis.getVoices();
+  if (immediate && immediate.length > 0) {
+    return immediate;
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      window.speechSynthesis.removeEventListener("voiceschanged", onChanged);
+      resolve(window.speechSynthesis.getVoices() || []);
+    };
+    const onChanged = () => done();
+    window.speechSynthesis.addEventListener("voiceschanged", onChanged);
+    setTimeout(done, timeoutMs);
+  });
+}
+
+// Score voices so Neural / Natural / Google / Enhanced voices always beat robotic OS voices
+function scoreVoiceCandidate(
+  v: SpeechSynthesisVoice,
+  voice: VoicePersona,
+  targetLang: string,
+  hasUrduScript: boolean
+): number {
+  let score = 0;
+  const nameLower = v.name.toLowerCase();
+  const langLower = v.lang.toLowerCase();
+  const targetLower = targetLang.toLowerCase();
+
+  if (hasUrduScript) {
+    if (langLower.startsWith("ur")) score += 80;
+    else if (langLower.startsWith("hi")) score += 55;
+    else if (langLower.includes("in")) score += 25;
+  } else {
+    if (langLower === targetLower) score += 70;
+    else if (langLower.startsWith(targetLower.slice(0, 2))) score += 35;
+  }
+
+  // Quality tier boosts
+  if (nameLower.includes("natural") || nameLower.includes("neural")) score += 60;
+  if (nameLower.includes("google")) score += 45;
+  if (nameLower.includes("online")) score += 35;
+  if (nameLower.includes("enhanced") || nameLower.includes("premium")) score += 40;
+  if (nameLower.includes("espeak") || nameLower.includes("festival")) score -= 60;
+
+  // Gender & persona name matching
+  const femaleHints = [
+    "female",
+    "woman",
+    "samantha",
+    "victoria",
+    "karen",
+    "serena",
+    "kate",
+    "moira",
+    "zira",
+    "hazel",
+    "susan",
+    "aria",
+    "jenny",
+    "libby",
+    "sonia",
+    "natasha",
+    "neerja",
+    "uzma",
+    "clara",
+    "ava",
+  ];
+  const maleHints = [
+    "male",
+    "man",
+    "daniel",
+    "alex",
+    "fred",
+    "george",
+    "oliver",
+    "david",
+    "mark",
+    "ryan",
+    "guy",
+    "rishi",
+    "prabhat",
+    "asad",
+    "william",
+    "liam",
+    "brian",
+    "andrew",
+    "christopher",
+  ];
+
+  const desiredHints = voice.gender === "Female" ? femaleHints : maleHints;
+  const oppositeHints = voice.gender === "Female" ? maleHints : femaleHints;
+
+  if (nameLower.includes(voice.name.toLowerCase())) score += 50;
+  if (desiredHints.some((h) => nameLower.includes(h))) score += 30;
+  if (oppositeHints.some((h) => nameLower.includes(h))) score -= 25;
+
+  return score;
+}
+
 export function getBrowserVoice(
   voice: VoicePersona,
-  accentLang?: string
+  accentLang?: string,
+  sampleText = ""
 ): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     return null;
@@ -105,29 +228,63 @@ export function getBrowserVoice(
   const voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) return null;
 
-  const targetLang = accentLang || "en-US";
-  const exactLangVoices = voices.filter(
-    (v) => v.lang.toLowerCase() === targetLang.toLowerCase()
-  );
-  const familyVoices = voices.filter((v) =>
-    v.lang.toLowerCase().startsWith(targetLang.slice(0, 2).toLowerCase())
-  );
-  const pool = exactLangVoices.length > 0 ? exactLangVoices : familyVoices;
+  const hasUrduScript = URDU_ARABIC_REGEX.test(sampleText);
+  const targetLang = hasUrduScript
+    ? "ur-PK"
+    : accentLang === "ur-PK"
+    ? "en-IN"
+    : accentLang || "en-US";
 
-  if (pool.length > 0) {
-    const genderLower = voice.gender.toLowerCase();
-    const femaleHints = ["female", "woman", "samantha", "victoria", "karen", "serena", "kate", "moira", "zira", "hazel", "susan", "aria", "jenny", "libby"];
-    const maleHints = ["male", "man", "daniel", "alex", "fred", "george", "oliver", "david", "mark", "ryan", "guy", "rishi"];
-    const hints = genderLower === "female" ? femaleHints : maleHints;
+  let bestVoice: SpeechSynthesisVoice | null = null;
+  let bestScore = -Infinity;
 
-    const matched = pool.find((v) => {
-      const n = v.name.toLowerCase();
-      return hints.some((h) => n.includes(h)) || n.includes(voice.name.toLowerCase());
-    });
-    return matched || pool[0];
+  for (const candidate of voices) {
+    const sc = scoreVoiceCandidate(candidate, voice, targetLang, hasUrduScript);
+    if (sc > bestScore) {
+      bestScore = sc;
+      bestVoice = candidate;
+    }
   }
 
-  return voices[0] || null;
+  return bestVoice || voices[0] || null;
+}
+
+// Split long paragraphs into <=165 char natural clauses to prevent Chrome's 15-second SpeechSynthesis cutoff
+function splitIntoNaturalClauses(text: string): string[] {
+  if (text.length <= 165) return [text];
+
+  const clauses = text
+    .split(/(?<=[,;:\u2014])\s+/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  const result: string[] = [];
+  let current = "";
+  for (const clause of clauses) {
+    if ((current + " " + clause).trim().length <= 165) {
+      current = (current + " " + clause).trim();
+    } else {
+      if (current) result.push(current);
+      if (clause.length <= 165) {
+        current = clause;
+      } else {
+        // Word wrap chunking
+        const words = clause.split(/\s+/);
+        let chunk = "";
+        for (const w of words) {
+          if ((chunk + " " + w).trim().length <= 155) {
+            chunk = (chunk + " " + w).trim();
+          } else {
+            if (chunk) result.push(chunk);
+            chunk = w;
+          }
+        }
+        current = chunk;
+      }
+    }
+  }
+  if (current) result.push(current);
+  return result.length > 0 ? result : [text];
 }
 
 export function speakSingleText(
@@ -150,29 +307,42 @@ export function speakSingleText(
 
   window.speechSynthesis.cancel();
 
-  const accent = COUNTRY_ACCENTS.find((a) => a.id === options.accentId);
-  const utterance = new SpeechSynthesisUtterance(text);
-  const matchedVoice = getBrowserVoice(voice, accent?.lang);
-  if (matchedVoice) utterance.voice = matchedVoice;
-  utterance.lang = accent?.lang || "en-US";
-  utterance.pitch = Math.max(0.5, Math.min(2.0, voice.basePitch * (options.pitch ?? 1)));
-  utterance.rate = Math.max(0.5, Math.min(2.0, voice.baseRate * (options.rate ?? 1)));
-  utterance.volume = options.volume ?? 1.0;
+  waitForBrowserVoices().then(() => {
+    const accent = COUNTRY_ACCENTS.find((a) => a.id === options.accentId);
+    const hasUrdu = URDU_ARABIC_REGEX.test(text);
+    const resolvedLang = hasUrdu
+      ? "ur-PK"
+      : accent?.lang === "ur-PK"
+      ? "en-IN"
+      : accent?.lang || "en-US";
 
-  utterance.onstart = () => options.onStart?.();
-  utterance.onend = () => options.onEnd?.();
-  utterance.onerror = (e) => {
-    if (e.error !== "canceled" && e.error !== "interrupted") {
-      options.onError?.(e);
+    const utterance = new SpeechSynthesisUtterance(text);
+    const matchedVoice = getBrowserVoice(voice, resolvedLang, text);
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+      utterance.lang = matchedVoice.lang || resolvedLang;
     } else {
-      options.onEnd?.();
+      utterance.lang = resolvedLang;
     }
-  };
+    utterance.pitch = Math.max(0.55, Math.min(1.85, voice.basePitch * (options.pitch ?? 1)));
+    utterance.rate = Math.max(0.65, Math.min(1.75, voice.baseRate * (options.rate ?? 1)));
+    utterance.volume = options.volume ?? 1.0;
 
-  window.speechSynthesis.speak(utterance);
+    utterance.onstart = () => options.onStart?.();
+    utterance.onend = () => options.onEnd?.();
+    utterance.onerror = (e) => {
+      if (e.error !== "canceled" && e.error !== "interrupted") {
+        options.onError?.(e);
+      } else {
+        options.onEnd?.();
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
-// Multi-segment expressive playback controller (cancels cleanly, applies per-sentence emotion pitch/rate/pauses)
+// Multi-segment expressive playback controller with async voice wait, clause splitting & per-sentence emotions
 export function speakSegmentsExpressively(
   segments: AnalyzedSegment[],
   voice: VoicePersona,
@@ -195,50 +365,75 @@ export function speakSegmentsExpressively(
   window.speechSynthesis.cancel();
 
   const accent = COUNTRY_ACCENTS.find((a) => a.id === options.accentId);
-  const matchedVoice = getBrowserVoice(voice, accent?.lang);
 
-  const playNext = (index: number) => {
+  waitForBrowserVoices().then(() => {
     if (cancelled) return;
-    if (index >= segments.length) {
-      options.onComplete?.();
-      return;
-    }
 
-    const seg = segments[index];
-    const emo = EMOTION_PROFILES[seg.emotion] || EMOTION_PROFILES.calm;
-    const utterance = new SpeechSynthesisUtterance(seg.text);
-
-    if (matchedVoice) utterance.voice = matchedVoice;
-    utterance.lang = accent?.lang || "en-US";
-    utterance.pitch = Math.max(
-      0.5,
-      Math.min(2.0, voice.basePitch * (options.basePitch ?? 1) * emo.pitchFactor)
-    );
-    utterance.rate = Math.max(
-      0.5,
-      Math.min(1.9, voice.baseRate * (options.baseRate ?? 1) * emo.rateFactor)
-    );
-    utterance.volume = emo.volumeFactor;
-
-    utterance.onstart = () => {
-      if (!cancelled) options.onSegmentStart?.(index);
-    };
-
-    utterance.onend = () => {
+    const playSegment = (segIdx: number) => {
       if (cancelled) return;
-      timerId = setTimeout(() => playNext(index + 1), emo.pauseAfterMs);
+      if (segIdx >= segments.length) {
+        options.onComplete?.();
+        return;
+      }
+
+      const seg = segments[segIdx];
+      const emo = EMOTION_PROFILES[seg.emotion] || EMOTION_PROFILES.calm;
+      const clauses = splitIntoNaturalClauses(seg.text);
+      const hasUrdu = URDU_ARABIC_REGEX.test(seg.text);
+      const resolvedLang = hasUrdu
+        ? "ur-PK"
+        : accent?.lang === "ur-PK"
+        ? "en-IN"
+        : accent?.lang || "en-US";
+      const matchedVoice = getBrowserVoice(voice, resolvedLang, seg.text);
+
+      options.onSegmentStart?.(segIdx);
+
+      const playClause = (clauseIdx: number) => {
+        if (cancelled) return;
+        if (clauseIdx >= clauses.length) {
+          timerId = setTimeout(() => playSegment(segIdx + 1), emo.pauseAfterMs);
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(clauses[clauseIdx]);
+        if (matchedVoice) {
+          utterance.voice = matchedVoice;
+          utterance.lang = matchedVoice.lang || resolvedLang;
+        } else {
+          utterance.lang = resolvedLang;
+        }
+
+        utterance.pitch = Math.max(
+          0.55,
+          Math.min(1.85, voice.basePitch * (options.basePitch ?? 1) * emo.pitchFactor)
+        );
+        utterance.rate = Math.max(
+          0.6,
+          Math.min(1.75, voice.baseRate * (options.baseRate ?? 1) * emo.rateFactor)
+        );
+        utterance.volume = emo.volumeFactor;
+
+        utterance.onend = () => {
+          if (cancelled) return;
+          const microPause = clauseIdx < clauses.length - 1 ? 95 : 0;
+          timerId = setTimeout(() => playClause(clauseIdx + 1), microPause);
+        };
+
+        utterance.onerror = (e) => {
+          if (cancelled) return;
+          if (e.error === "canceled" || e.error === "interrupted") return;
+          playClause(clauseIdx + 1);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      };
+
+      playClause(0);
     };
 
-    utterance.onerror = (e) => {
-      if (cancelled) return;
-      if (e.error === "canceled" || e.error === "interrupted") return;
-      playNext(index + 1);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  playNext(0);
+    playSegment(0);
+  });
 
   return () => {
     cancelled = true;
@@ -253,93 +448,4 @@ export function stopSpeaking() {
   if (typeof window !== "undefined" && "speechSynthesis" in window) {
     window.speechSynthesis.cancel();
   }
-}
-
-// Synthesize an offline WAV fallback clip when Gemini server TTS is unavailable
-export async function generateFallbackWavUrl(
-  segments: AnalyzedSegment[],
-  durationEstimate: number
-): Promise<string> {
-  const sampleRate = 24000;
-  const duration = Math.max(1.5, Math.min(25, durationEstimate));
-  const numFrames = Math.floor(sampleRate * duration);
-
-  const AudioCtx =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  const audioCtx = new AudioCtx({ sampleRate });
-  const buffer = audioCtx.createBuffer(1, numFrames, sampleRate);
-  const channelData = buffer.getChannelData(0);
-
-  const segCount = Math.max(1, segments.length);
-  for (let i = 0; i < numFrames; i++) {
-    const t = i / sampleRate;
-    const segIdx = Math.min(segCount - 1, Math.floor((i / numFrames) * segCount));
-    const emo = EMOTION_PROFILES[segments[segIdx]?.emotion || "calm"] || EMOTION_PROFILES.calm;
-
-    const pitchFreq = 135 * emo.pitchFactor + 18 * Math.sin(2 * Math.PI * 1.4 * t);
-    const envelope = Math.max(0, Math.sin(Math.PI * (i / numFrames)));
-    const syllableGate = 0.5 + 0.5 * Math.sin(2 * Math.PI * (3.5 * emo.rateFactor) * t);
-
-    const wave =
-      Math.sin(2 * Math.PI * pitchFreq * t) * 0.45 +
-      Math.sin(2 * Math.PI * pitchFreq * 2.2 * t) * 0.2 +
-      Math.sin(2 * Math.PI * 620 * t) * 0.1;
-
-    channelData[i] = wave * envelope * syllableGate * 0.35;
-  }
-
-  const wavBlob = audioBufferToWavBlob(buffer);
-  audioCtx.close().catch(() => undefined);
-  return URL.createObjectURL(wavBlob);
-}
-
-function audioBufferToWavBlob(audioBuffer: AudioBuffer): Blob {
-  const numOfChan = audioBuffer.numberOfChannels;
-  const length = audioBuffer.length * numOfChan * 2 + 44;
-  const outBuffer = new ArrayBuffer(length);
-  const view = new DataView(outBuffer);
-  const channels: Float32Array[] = [];
-  let sample: number;
-  let offset = 0;
-  let pos = 0;
-
-  const setUint16 = (data: number) => {
-    view.setUint16(pos, data, true);
-    pos += 2;
-  };
-  const setUint32 = (data: number) => {
-    view.setUint32(pos, data, true);
-    pos += 4;
-  };
-
-  setUint32(0x46464952);
-  setUint32(length - 8);
-  setUint32(0x45564157);
-  setUint32(0x20746d66);
-  setUint32(16);
-  setUint16(1);
-  setUint16(numOfChan);
-  setUint32(audioBuffer.sampleRate);
-  setUint32(audioBuffer.sampleRate * 2 * numOfChan);
-  setUint16(numOfChan * 2);
-  setUint16(16);
-  setUint32(0x61746164);
-  setUint32(length - pos - 4);
-
-  for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
-    channels.push(audioBuffer.getChannelData(i));
-  }
-
-  while (pos < length) {
-    for (let i = 0; i < numOfChan; i++) {
-      sample = Math.max(-1, Math.min(1, channels[i][offset]));
-      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
-      view.setInt16(pos, sample, true);
-      pos += 2;
-    }
-    offset++;
-  }
-
-  return new Blob([outBuffer], { type: "audio/wav" });
 }

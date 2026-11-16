@@ -1,0 +1,21 @@
+# Echo Clone — Expressive AI Voice & Multi-Emotion TTS Studio
+URL: https://echoclonevoice.vercel.app/
+
+## Overview
+Echo Clone is a multi-accent, multi-emotion AI Text-to-Speech (TTS) studio designed for storytellers, content creators, audiobook narrators, educators, and marketers.
+
+## Key Capabilities
+- **Regional Country Accents**: American English (US), British English (UK), Australian English (AU), Canadian English (CA), South Asian English (PK/IN), and Urdu / English Bilingual delivery.
+- **Automatic Multi-Emotion Story Mode**: Analyzes scripts sentence by sentence and shifts vocal expression across Calm, Angry/Intense, Laughing/Joyful, Humorous/Playful, Sad/Emotional, Excited/Energetic, and Whispering/Suspense.
+- **Delivery Modes**: Story Narration, Public Speech / Keynote, Professional / Corporate, Conversational / Podcast, Dramatic / Cinema Trailer, and Standard Clear Read.
+- **Zero External Keys Required**: Built-in neural TTS synthesis with seamless expressive browser speech fallback and instant WAV export.
+- **Synced Creator Packages**:
+  - Starter Free ($0 / 30 days): 10,000 monthly characters, US & UK accents.
+  - Creator Pro ($9 / 30 days): 150,000 monthly characters, all 6 accents, Auto Multi-Emotion Story Mode.
+  - Studio Enterprise ($24 / 30 days): 500,000 monthly characters, long-form 15,000-character scripts, priority support.
+
+## Important Links
+- Home & Live Demo: https://echoclonevoice.vercel.app/
+- AI Voice Studio: https://echoclonevoice.vercel.app/studio/tts
+- Packages & Pricing: https://echoclonevoice.vercel.app/checkout
+- Audio Library: https://echoclonevoice.vercel.app/library

@@ -33,6 +33,7 @@ export interface VoicePersona {
   gender: "Female" | "Male";
   recommendedAccent: string;
   style: string;
+  voiceDirection: string;
   sample: string;
   basePitch: number;
   baseRate: number;
@@ -244,8 +245,9 @@ export const VOICES: VoicePersona[] = [
     gender: "Female",
     recommendedAccent: "en-US",
     style: "Expressive & Natural",
+    voiceDirection: "Voice persona Jessica: warm, expressive young adult female voice with crisp studio clarity and dynamic emotional inflection.",
     sample: "Hello! I am Jessica. Whether it is a tense drama or a joyful laugh, I bring every line to life.",
-    basePitch: 1.08,
+    basePitch: 1.06,
     baseRate: 1.0
   },
   {
@@ -255,8 +257,9 @@ export const VOICES: VoicePersona[] = [
     gender: "Male",
     recommendedAccent: "en-US",
     style: "Deep & Authoritative",
+    voiceDirection: "Voice persona Arnold: deep, resonant mature male baritone with commanding chest resonance and steady gravitas.",
     sample: "Good evening. I am Arnold, ready to deliver commanding narration and intense dramatic scenes.",
-    basePitch: 0.84,
+    basePitch: 0.85,
     baseRate: 0.96
   },
   {
@@ -266,8 +269,9 @@ export const VOICES: VoicePersona[] = [
     gender: "Female",
     recommendedAccent: "en-GB",
     style: "Warm Storyteller",
+    voiceDirection: "Voice persona Alice: refined, silky female storyteller voice with gentle warmth and effortless theatrical pacing.",
     sample: "Good day! I am Alice, speaking with crisp British clarity and heartfelt emotional range.",
-    basePitch: 1.06,
+    basePitch: 1.05,
     baseRate: 0.98
   },
   {
@@ -277,8 +281,9 @@ export const VOICES: VoicePersona[] = [
     gender: "Male",
     recommendedAccent: "en-GB",
     style: "Crisp & Cinematic",
+    voiceDirection: "Voice persona Daniel: poised, cinematic male documentary narrator with crisp articulation and composed authority.",
     sample: "Welcome. I am Daniel, bringing composed authority to documentaries, speeches, and stories.",
-    basePitch: 0.88,
+    basePitch: 0.89,
     baseRate: 0.96
   },
   {
@@ -288,6 +293,7 @@ export const VOICES: VoicePersona[] = [
     gender: "Female",
     recommendedAccent: "en-AU",
     style: "Bright & Witty",
+    voiceDirection: "Voice persona Matilda: lively, cheerful bright female voice full of sparkle, comedic timing, and upbeat energy.",
     sample: "Hey there! I am Matilda, built for lively comedy, upbeat podcasts, and expressive characters.",
     basePitch: 1.1,
     baseRate: 1.02
@@ -299,6 +305,7 @@ export const VOICES: VoicePersona[] = [
     gender: "Male",
     recommendedAccent: "en-CA",
     style: "Conversational Host",
+    voiceDirection: "Voice persona Liam: friendly, relaxed conversational male podcast host with natural smile in the voice.",
     sample: "What is going on everyone! I am Liam, bringing natural warmth and effortless humor.",
     basePitch: 0.92,
     baseRate: 1.0
@@ -310,8 +317,9 @@ export const VOICES: VoicePersona[] = [
     gender: "Female",
     recommendedAccent: "en-PK",
     style: "Poised & Multilingual",
+    voiceDirection: "Voice persona Zara: poised, graceful South Asian / bilingual female narrator fluent in expressive English and Urdu phrasing.",
     sample: "Assalam-o-Alaikum and hello! I am Zara, fluent in natural English and expressive Urdu storytelling.",
-    basePitch: 1.05,
+    basePitch: 1.04,
     baseRate: 0.98
   },
   {
@@ -321,8 +329,9 @@ export const VOICES: VoicePersona[] = [
     gender: "Male",
     recommendedAccent: "ur-PK",
     style: "Rich & Soulful",
+    voiceDirection: "Voice persona Hamza: rich, soulful South Asian male storyteller voice ideal for heartfelt Urdu-English dramas and speeches.",
     sample: "Hello friends! I am Hamza, crafted for soulful stories, emotional drama, and impactful speeches.",
-    basePitch: 0.86,
+    basePitch: 0.87,
     baseRate: 0.95
   }
 ];

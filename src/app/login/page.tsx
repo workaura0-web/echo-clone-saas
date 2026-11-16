@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { loginWithEmail, signInWithGoogle, resetPassword, formatAuthError } from "@/lib/firebase/auth";
-import { Sparkles, Mail, Lock, ArrowRight, Heart, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, Heart, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -73,9 +74,17 @@ export default function LoginPage() {
 
       {/* Top Spacer / Header Brand */}
       <div className="pt-4 z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-white/10 text-xs text-slate-300 backdrop-blur-md">
-          <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Echo Voice Platform
-        </div>
+        <Link href="/" className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-white/10 text-xs text-slate-200 backdrop-blur-md hover:border-violet-500/50 transition-colors">
+          <Image
+            src="/echo-icon-192.png"
+            alt="Echo Clone Logo"
+            width={20}
+            height={20}
+            referrerPolicy="no-referrer"
+            className="w-5 h-5 rounded object-cover"
+          />
+          <span className="font-semibold">Echo Clone Studio</span>
+        </Link>
       </div>
 
       {/* Login Card */}
@@ -83,6 +92,14 @@ export default function LoginPage() {
         
         {/* Title */}
         <div className="text-center space-y-2">
+          <Image
+            src="/echo-icon-192.png"
+            alt="Echo Clone Emblem"
+            width={48}
+            height={48}
+            referrerPolicy="no-referrer"
+            className="w-12 h-12 rounded-2xl mx-auto border border-violet-500/40 shadow-lg shadow-violet-500/20 object-cover"
+          />
           <h1 className="text-3xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
             Welcome Back
           </h1>

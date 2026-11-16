@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { signupWithEmail, signInWithGoogle, formatAuthError } from "@/lib/firebase/auth";
 import { ArrowRight, Lock, Mail, User, CheckCircle2, Eye, EyeOff, MessageCircle } from "lucide-react";
@@ -54,11 +55,16 @@ export default function SignUpPage() {
         
         {/* Header */}
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-white mb-2">
-            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 p-[1px] rounded-lg">
-              <span className="block bg-slate-950 px-2 py-0.5 rounded-[7px] text-sm font-extrabold">ECHO</span>
-            </span>
-            <span className="text-slate-100">Studio</span>
+          <Link href="/" className="inline-flex items-center gap-2.5 font-bold text-xl text-white mb-2">
+            <Image
+              src="/echo-icon-192.png"
+              alt="Echo Clone Logo"
+              width={36}
+              height={36}
+              referrerPolicy="no-referrer"
+              className="w-9 h-9 rounded-xl border border-violet-500/40 object-cover shadow-md shadow-violet-500/20"
+            />
+            <span className="text-slate-100">Echo Clone</span>
           </Link>
           <h1 className="text-2xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
             Create an Account

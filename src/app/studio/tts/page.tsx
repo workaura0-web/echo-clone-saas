@@ -31,7 +31,6 @@ import {
 import {
   analyzeScriptEmotionsLocally,
   AnalyzedSegment,
-  generateFallbackWavUrl,
   speakSegmentsExpressively,
   speakSingleText,
   stopSpeaking,
@@ -101,6 +100,8 @@ export default function TTSStudio() {
   const [notice, setNotice] = useState<{ type: "error" | "success" | "warning"; text: string } | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const previewCacheRef = useRef<Map<string, string>>(new Map());
   const stopFallbackRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -138,6 +139,7 @@ export default function TTSStudio() {
     return () => {
       stopSpeaking();
       stopFallbackRef.current?.();
+      if (previewAudioRef.current) previewAudioRef.current.pause();
       unsubAuth();
       if (unsubProfile) unsubProfile();
     };
@@ -201,19 +203,66 @@ export default function TTSStudio() {
     setNotice(null);
   };
 
-  const handlePreviewVoice = (e: React.MouseEvent, voiceItem: VoicePersona) => {
+  const handlePreviewVoice = async (e: React.MouseEvent, voiceItem: VoicePersona) => {
     e.stopPropagation();
 
     if (previewingVoiceId === voiceItem.id) {
       stopSpeaking();
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current.currentTime = 0;
+      }
       setPreviewingVoiceId(null);
       return;
     }
 
     stopSpeaking();
     stopFallbackRef.current?.();
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current.currentTime = 0;
+    }
     setIsPlaying(false);
     setPreviewingVoiceId(voiceItem.id);
+
+    const cacheKey = `${voiceItem.id}:${selectedAccent}:${pitch.toFixed(1)}:${speed.toFixed(1)}`;
+    const cachedSample = previewCacheRef.current.get(cacheKey);
+    if (cachedSample) {
+      const audio = new Audio(cachedSample);
+      previewAudioRef.current = audio;
+      audio.onended = () => setPreviewingVoiceId(null);
+      audio.onerror = () => setPreviewingVoiceId(null);
+      audio.play().catch(() => setPreviewingVoiceId(null));
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: voiceItem.sample,
+          voiceId: voiceItem.id,
+          accentId: selectedAccent,
+          toneId: selectedTone,
+          speed,
+          pitch,
+          isPreview: true,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.engine === "gemini-tts" && data.audioUrl) {
+        previewCacheRef.current.set(cacheKey, data.audioUrl);
+        const audio = new Audio(data.audioUrl);
+        previewAudioRef.current = audio;
+        audio.onended = () => setPreviewingVoiceId(null);
+        audio.onerror = () => setPreviewingVoiceId(null);
+        await audio.play();
+        return;
+      }
+    } catch {
+      // Fall back cleanly to expressive browser speech
+    }
 
     speakSingleText(voiceItem.sample, voiceItem, {
       accentId: selectedAccent,
@@ -315,7 +364,7 @@ export default function TTSStudio() {
           : segments;
       setSegments(finalSegments);
 
-      let finalAudioUrl: string;
+      let finalAudioUrl: string | null = null;
       const engineUsed: "gemini-tts" | "web-speech-fallback" =
         result.engine === "gemini-tts" && result.audioUrl
           ? "gemini-tts"
@@ -330,15 +379,14 @@ export default function TTSStudio() {
 
         // Auto-play neural WAV output cleanly
         setTimeout(() => {
-          if (audioRef.current) {
+          if (audioRef.current && finalAudioUrl) {
             audioRef.current.src = finalAudioUrl;
             audioRef.current.play().catch(() => undefined);
           }
         }, 80);
       } else {
-        // Multi-segment expressive Web Speech playback + downloadable WAV clip
-        finalAudioUrl = await generateFallbackWavUrl(finalSegments, estimatedSeconds);
-        setAudioUrl(finalAudioUrl);
+        // Multi-segment expressive Speech playback (no fake sine-wave WAV saved)
+        setAudioUrl(null);
         setHasAudio(true);
         setIsPlaying(true);
 
@@ -377,7 +425,9 @@ export default function TTSStudio() {
         segmentsJson: JSON.stringify(finalSegments),
       });
 
-      await cacheAudioClip(saved.id, finalAudioUrl);
+      if (finalAudioUrl) {
+        await cacheAudioClip(saved.id, finalAudioUrl);
+      }
 
       if (profile) {
         const updatedProfile = {
@@ -951,15 +1001,21 @@ export default function TTSStudio() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleDownload}
-                    disabled={isDownloading || !audioUrl}
-                    className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white flex items-center gap-2 transition-colors"
-                  >
-                    <Download className="w-3.5 h-3.5 text-sky-400" />
-                    {isDownloading ? "Preparing..." : "Download WAV"}
-                  </button>
+                  {audioUrl ? (
+                    <button
+                      type="button"
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                      className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white flex items-center gap-2 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5 text-sky-400" />
+                      {isDownloading ? "Preparing..." : "Download WAV"}
+                    </button>
+                  ) : (
+                    <span className="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950 text-[11px] text-slate-400">
+                      Live Browser Speech Playback
+                    </span>
+                  )}
                 </div>
               </div>
             )}

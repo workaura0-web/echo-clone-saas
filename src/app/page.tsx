@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { PLANS, PlanId } from "@/lib/plans";
 import {
   COUNTRY_ACCENTS,
@@ -23,8 +24,30 @@ import {
   Play,
   ShieldCheck,
   Sparkles,
-  Volume2,
 } from "lucide-react";
+
+const AEO_FAQS = [
+  {
+    question: "How does Echo Clone multi-emotion Story Mode work?",
+    answer:
+      "When you select Story Narration, Echo Clone automatically analyzes your script sentence by sentence—shifting vocal tone, pace, and emotional cues across Angry, Laughing, Humorous, Sad, Whispering, and Excited lines, with manual override controls per line.",
+  },
+  {
+    question: "Which regional accents are available in Echo Clone?",
+    answer:
+      "You can generate speech in American English (US), British English (UK), Australian English (AU), Canadian English (CA), South Asian English (PK/IN), and Urdu-English Bilingual delivery.",
+  },
+  {
+    question: "Do I need external ElevenLabs or Supabase API keys?",
+    answer:
+      "No. Echo Clone runs out of the box with built-in neural speech synthesis, automatic expressive browser voice fallback, and synced cloud account persistence—zero external API keys required.",
+  },
+  {
+    question: "How do monthly packages and expiry notifications work?",
+    answer:
+      "Every account starts with Starter Free (10,000 characters / 30 days) and can upgrade to Creator Pro or Studio Enterprise. Echo Clone tracks character usage in real time and sends instant bell and dashboard alerts when your quota reaches 80%, hits 100%, or approaches expiry.",
+  },
+];
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -376,12 +399,64 @@ export default function Home() {
             })}
           </div>
         </section>
+        {/* AEO FAQ Section & FAQPage Structured Data */}
+        <section id="faq" className="space-y-8 scroll-mt-24">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                mainEntity: AEO_FAQS.map((item) => ({
+                  "@type": "Question",
+                  name: item.question,
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: item.answer,
+                  },
+                })),
+              }),
+            }}
+          />
+
+          <div className="max-w-2xl space-y-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-sm text-slate-400">
+              Clear answers about regional accents, multi-emotion storytelling, WAV exports, and synced creator plans.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {AEO_FAQS.map((item, idx) => (
+              <article
+                key={idx}
+                className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 space-y-2"
+              >
+                <h3 className="text-sm font-bold text-white leading-snug">
+                  {item.question}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {item.answer}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
       </main>
 
       <footer className="border-t border-slate-800/80 py-8 bg-slate-950">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-3">
-            <Volume2 className="w-4 h-4 text-violet-400" />
+            <Image
+              src="/echo-icon-192.png"
+              alt="Echo Clone Logo"
+              width={24}
+              height={24}
+              referrerPolicy="no-referrer"
+              className="w-6 h-6 rounded-md border border-violet-500/30 object-cover"
+            />
             <span>© 2026 Echo Clone. Built by ABM.</span>
           </div>
           <div className="flex items-center gap-6">

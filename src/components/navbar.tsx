@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   auth,
@@ -121,12 +122,20 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between gap-8 px-6">
-        {/* Zone 1: Single-element Brand Wordmark */}
+        {/* Zone 1: Custom Brand Logo & Wordmark */}
         <Link
           href="/"
-          className="text-lg font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 hover:text-violet-300 transition-colors"
+          className="inline-flex items-center gap-2.5 text-lg font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 hover:text-violet-300 transition-colors"
         >
-          Echo Clone
+          <Image
+            src="/echo-icon-192.png"
+            alt="Echo Clone Logo"
+            width={32}
+            height={32}
+            referrerPolicy="no-referrer"
+            className="w-8 h-8 rounded-lg border border-violet-500/40 object-cover shadow-sm shadow-violet-500/20"
+          />
+          <span>Echo Clone</span>
         </Link>
 
         {/* Zone 2: Clean Single-Line Nav Links */}
