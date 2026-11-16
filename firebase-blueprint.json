@@ -1,0 +1,296 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered user account identity",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user authentication identifier"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User public display name"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "admin"],
+          "description": "System role"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        }
+      },
+      "required": ["id", "email"]
+    },
+    "Profile": {
+      "title": "Profile",
+      "description": "User subscription package, quotas, expiry, and feature flags",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Matches user authentication ID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email for admin visibility"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "pro", "enterprise"],
+          "description": "Subscription tier"
+        },
+        "planName": {
+          "type": "string",
+          "description": "Human readable package name"
+        },
+        "characterLimit": {
+          "type": "number",
+          "description": "Total monthly character allotment"
+        },
+        "usedCharacters": {
+          "type": "number",
+          "description": "Total characters consumed"
+        },
+        "maxCharsPerGeneration": {
+          "type": "number",
+          "description": "Maximum characters allowed in a single script"
+        },
+        "planStartedAt": {
+          "type": "string",
+          "description": "ISO timestamp when current package began"
+        },
+        "planExpiresAt": {
+          "type": "string",
+          "description": "ISO timestamp when current package expires"
+        },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Approval status for studio usage"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "plan", "characterLimit", "usedCharacters", "isApproved"]
+    },
+    "Generation": {
+      "title": "Generation",
+      "description": "Log of speech synthesis history with accent, tone, and sentence emotion segments",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique generation record ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short script title"
+        },
+        "text": {
+          "type": "string",
+          "description": "Text prompt synthesized"
+        },
+        "voiceId": {
+          "type": "string",
+          "description": "Selected voice personality ID"
+        },
+        "voiceName": {
+          "type": "string",
+          "description": "Name of voice chosen"
+        },
+        "accentId": {
+          "type": "string",
+          "description": "Country accent ID"
+        },
+        "accentLabel": {
+          "type": "string",
+          "description": "Country accent display label"
+        },
+        "toneId": {
+          "type": "string",
+          "description": "Delivery tone ID"
+        },
+        "toneLabel": {
+          "type": "string",
+          "description": "Delivery tone display label"
+        },
+        "engine": {
+          "type": "string",
+          "description": "Synthesis engine used"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Estimated or actual audio duration in seconds"
+        },
+        "characterCount": {
+          "type": "number",
+          "description": "Number of characters in prompt"
+        },
+        "segmentsJson": {
+          "type": "string",
+          "description": "Serialized sentence emotion breakdown"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        }
+      },
+      "required": ["id", "userId", "text", "voiceId", "characterCount"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment and checkout transaction record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Payment transaction ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User identifier"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "planId": {
+          "type": "string",
+          "enum": ["free", "pro", "enterprise"],
+          "description": "Requested plan tier ID"
+        },
+        "planName": {
+          "type": "string",
+          "description": "Purchased plan name"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount paid in USD"
+        },
+        "pricePkr": {
+          "type": "string",
+          "description": "Amount in PKR"
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Payment reference ID"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "completed", "approved", "rejected"],
+          "description": "Transaction status"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["id", "userId", "amount", "status"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app user notifications for package expiry, low quota, and plan updates",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Notification document ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Target user UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short notification title"
+        },
+        "message": {
+          "type": "string",
+          "description": "Notification body text"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["info", "warning", "expired", "success"],
+          "description": "Severity level"
+        },
+        "actionHref": {
+          "type": "string",
+          "description": "Optional navigation route"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Whether user has read the alert"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp"
+        }
+      },
+      "required": ["id", "userId", "title", "message", "type", "isRead", "createdAt"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Administrator authorization record",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Admin user UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "Admin email"
+        },
+        "grantedAt": {
+          "type": "string",
+          "description": "Timestamp when admin privilege was granted"
+        }
+      },
+      "required": ["userId", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Primary user profile document mapped to auth UID"
+    },
+    "/profiles/{userId}": {
+      "schema": "Profile",
+      "description": "User subscription package, limits, and expiration profile"
+    },
+    "/generations/{generationId}": {
+      "schema": "Generation",
+      "description": "User voice generation history items"
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Payment requests and receipts"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User package expiration and quota alerts"
+    },
+    "/admins/{userId}": {
+      "schema": "Admin",
+      "description": "Collection of verified administrator user IDs"
+    }
+  }
+}

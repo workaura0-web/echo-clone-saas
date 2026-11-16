@@ -1,634 +1,909 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/supabase";
-import type { User } from "@supabase/supabase-js";
-import { 
-  Play, 
-  Sparkles, 
-  Volume2, 
-  Mic, 
-  Settings2, 
-  Download, 
-  Pause, 
-  RotateCcw,
-  Smile,
-  FileType,
-  FileText,
-  Clock,
-  Heart,
-  VolumeX,
+import {
+  auth,
+  ensureUserProfile,
+  subscribeUserProfile,
+  trackCharacterUsage,
+  UserProfile,
+} from "@/lib/firebase/auth";
+import {
+  saveGenerationRecord,
+  syncUserLifecycleNotifications,
+} from "@/lib/firebase/db";
+import { cacheAudioClip } from "@/lib/audio/audioCache";
+import {
+  computePackageStatus,
+  getPlanDefinition,
+} from "@/lib/plans";
+import {
+  COUNTRY_ACCENTS,
+  DELIVERY_TONES,
+  EMOTION_PROFILES,
+  EmotionType,
+  SAMPLE_TEMPLATES,
+  VOICES,
+  VoicePersona,
+} from "@/lib/audio/accentsAndVoices";
+import {
+  analyzeScriptEmotionsLocally,
+  AnalyzedSegment,
+  generateFallbackWavUrl,
+  speakSegmentsExpressively,
+  speakSingleText,
+  stopSpeaking,
+} from "@/lib/audio/speechSynth";
+import { onAuthStateChanged, User } from "firebase/auth";
+import {
+  AlertTriangle,
   CheckCircle2,
-  Crown
+  Clock,
+  Crown,
+  Download,
+  FileText,
+  Globe2,
+  Lock,
+  Mic,
+  Pause,
+  Play,
+  RotateCcw,
+  Settings2,
+  Sliders,
+  Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
-// Distinct Voice Configurations with realistic pitch, speed, and acoustic formants
-const VOICES = [
-  {
-    id: "v1",
-    voiceId: "cgSgspJ2msm6clMCkdW9",
-    name: "Jessica",
-    gender: "Female",
-    accent: "US English",
-    lang: "en-US",
-    style: "Bright & Friendly",
-    color: "from-violet-500 to-fuchsia-500",
-    glow: "shadow-violet-500/20",
-    sample: "Hey, I am Jessica, bringing a bright and friendly human tone.",
-    basePitch: 1.12,
-    baseRate: 1.02
-  },
-  {
-    id: "v2",
-    voiceId: "VR6AewLTigWG4xSOukaG",
-    name: "Arnold",
-    gender: "Male",
-    accent: "US English",
-    lang: "en-US",
-    style: "Crisp & Authoritative",
-    color: "from-sky-500 to-blue-600",
-    glow: "shadow-sky-500/20",
-    sample: "Hello, I am Arnold, with a crisp and authoritative narrator voice.",
-    basePitch: 0.8,
-    baseRate: 0.94
-  },
-  {
-    id: "v3",
-    voiceId: "nPczCjzI2devNBz1zQrb",
-    name: "Brian",
-    gender: "Male",
-    accent: "US English",
-    lang: "en-US",
-    style: "Deep & Welcoming",
-    color: "from-cyan-500 to-sky-600",
-    glow: "shadow-cyan-500/20",
-    sample: "Hi, I am Brian, speaking with a deep and welcoming natural tone.",
-    basePitch: 0.78,
-    baseRate: 0.96
-  },
-  {
-    id: "v4",
-    voiceId: "onwK4e9ZLuTAKqWW03F9",
-    name: "Daniel",
-    gender: "Male",
-    accent: "British English",
-    lang: "en-GB",
-    style: "Clear & Professional",
-    color: "from-teal-500 to-emerald-600",
-    glow: "shadow-teal-500/20",
-    sample: "Good day, I am Daniel, delivering a clear professional voice.",
-    basePitch: 0.86,
-    baseRate: 0.92
-  },
-  {
-    id: "v5",
-    voiceId: "Xb7hH8MSUJpSbSDYk0k2",
-    name: "Alice",
-    gender: "Female",
-    accent: "British English",
-    lang: "en-GB",
-    style: "Clear & Warm",
-    color: "from-pink-500 to-fuchsia-600",
-    glow: "shadow-pink-500/20",
-    sample: "Hello, I am Alice, speaking with a clear and warm natural voice.",
-    basePitch: 1.08,
-    baseRate: 0.96
-  },
-  {
-    id: "v6",
-    voiceId: "XrExE9yKIg1WjnnlVkGX",
-    name: "Matilda",
-    gender: "Female",
-    accent: "Australian English",
-    lang: "en-AU",
-    style: "Friendly Storyteller",
-    color: "from-rose-500 to-orange-500",
-    glow: "shadow-rose-500/20",
-    sample: "Hi, I am Matilda, with a friendly and expressive storytelling voice.",
-    basePitch: 1.05,
-    baseRate: 0.94
-  },
-  {
-    id: "v7",
-    voiceId: "CwhRBWXzGAHq8TQ4Fs17",
-    name: "Roger",
-    gender: "Male",
-    accent: "US English",
-    lang: "en-US",
-    style: "Laid-back Narrator",
-    color: "from-blue-500 to-cyan-600",
-    glow: "shadow-blue-500/20",
-    sample: "Hey there, I am Roger, with a relaxed and natural narrator voice.",
-    basePitch: 0.84,
-    baseRate: 0.98
-  },
-  {
-    id: "v8",
-    voiceId: "bIHbv24MWmeRgasZH58o",
-    name: "Will",
-    gender: "Male",
-    accent: "US English",
-    lang: "en-US",
-    style: "Relaxed & Deep",
-    color: "from-indigo-500 to-blue-700",
-    glow: "shadow-indigo-500/20",
-    sample: "Hello, I am Will, speaking with a relaxed and deep human tone.",
-    basePitch: 0.8,
-    baseRate: 0.95
-  },
-  {
-    id: "v9",
-    voiceId: "TX3LPaxmHKxFdv7VOQHJ",
-    name: "Liam",
-    gender: "Male",
-    accent: "US English",
-    lang: "en-US",
-    style: "Confident Presenter",
-    color: "from-sky-500 to-indigo-600",
-    glow: "shadow-sky-500/20",
-    sample: "Hi, I am Liam, delivering a confident and polished presentation voice.",
-    basePitch: 0.86,
-    baseRate: 1
-  },
-  {
-    id: "v10",
-    voiceId: "cjVigY5qzO86Huf0OWal",
-    name: "Eric",
-    gender: "Male",
-    accent: "US English",
-    lang: "en-US",
-    style: "Smooth & Conversational",
-    color: "from-emerald-500 to-teal-600",
-    glow: "shadow-emerald-500/20",
-    sample: "Hello, I am Eric, speaking in a smooth and conversational style.",
-    basePitch: 0.88,
-    baseRate: 0.97
-  }
-];
-
-const EMOTIONS = ["Neutral", "Excited", "Whispering", "Professional", "Dramatic"];
-const FORMATS = ["MP3"];
-
-const SAMPLE_TEMPLATES = [
-  { label: "Tech Promo", text: "Welcome to the future of AI voice generation. Transform any script into human-like audio instantly." },
-  { label: "Storytelling", text: "Once upon a time in a city lit by neon lights, an engineer created an AI that could speak with true emotion." },
-  { label: "Podcast Intro", text: "Hey everyone! Welcome back to the Echo Tech Podcast. Today we are diving into full-stack web app development." },
+const EMOTION_OPTIONS: EmotionType[] = [
+  "calm",
+  "angry",
+  "laughing",
+  "humorous",
+  "sad",
+  "excited",
+  "whispering",
 ];
 
 export default function TTSStudio() {
   const router = useRouter();
 
-  // User & Plan State
+  // Auth & Package State
   const [user, setUser] = useState<User | null>(null);
-  const [isProUser, setIsProUser] = useState(false);
-  const [isApproved, setIsApproved] = useState(false);
-  const [characterLimit, setCharacterLimit] = useState(10000);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
-  // Audio States
+  // Studio Voice, Accent, Tone Controls
+  const [selectedAccent, setSelectedAccent] = useState(COUNTRY_ACCENTS[0].id);
+  const [selectedTone, setSelectedTone] = useState("professional");
   const [selectedVoice, setSelectedVoice] = useState(VOICES[0].id);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
 
+  // Script & Prosody
+  const [title, setTitle] = useState("");
   const [text, setText] = useState("");
-  const [speed, setSpeed] = useState(1);
-  const [pitch, setPitch] = useState(1);
-  const [emotion, setEmotion] = useState("Neutral");
-  const [audioFormat, setAudioFormat] = useState("MP3");
+  const [speed, setSpeed] = useState(1.0);
+  const [pitch, setPitch] = useState(1.0);
+
+  // Sentence Emotion Timeline
+  const [segments, setSegments] = useState<AnalyzedSegment[]>([]);
+  const [activeSegmentIdx, setActiveSegmentIdx] = useState<number | null>(null);
+
+  // Playback & Generation State
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ type: "error" | "success"; text: string } | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioEngine, setAudioEngine] = useState<"gemini-tts" | "web-speech-fallback">("gemini-tts");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [notice, setNotice] = useState<{ type: "error" | "success" | "warning"; text: string } | null>(null);
 
-  // 1. Plan Verification with support for 'pro', 'approved', 'active' status
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const stopFallbackRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
-    const fetchUserAndPlan = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
+    let unsubProfile: (() => void) | null = null;
+
+    const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
+      }
+
       if (currentUser) {
         setUser(currentUser);
+        const prof = await ensureUserProfile(currentUser);
+        setProfile(prof);
+        await syncUserLifecycleNotifications(prof);
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("plan")
-          .eq("id", currentUser.id)
-          .single();
+        // Unlock story mode by default for Pro/Enterprise/Admin
+        const pDef = getPlanDefinition(prof.plan);
+        if (pDef.storyEmotionEnabled || prof.isAdmin) {
+          setSelectedTone("story");
+        }
 
-        // Check for 'pro', 'approved', 'active', or 'is_approved'
-        const planActive = 
-          profile?.plan?.toLowerCase() === "pro";
-
-        const approved =
-          currentUser.user_metadata?.account_status === "approved" ||
-          currentUser.email === "workaura0@gmail.com" ||
-          currentUser.email === "workaur0@gmail.com";
-
-        setIsApproved(approved);
-        setIsProUser(planActive);
-        setCharacterLimit(10000);
+        unsubProfile = subscribeUserProfile(currentUser, (updated) => {
+          setProfile(updated);
+          syncUserLifecycleNotifications(updated);
+        });
       } else {
         setUser(null);
-        setIsProUser(false);
-        setCharacterLimit(10000);
-        router.replace("/login");
+        setProfile(null);
       }
-    };
+      setAuthReady(true);
+    });
 
-    fetchUserAndPlan();
+    return () => {
+      stopSpeaking();
+      stopFallbackRef.current?.();
+      unsubAuth();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
-  const currentVoice = VOICES.find((v) => v.id === selectedVoice) || VOICES[0];
+  // Re-analyze local emotions smoothly when user edits script in Story/Dramatic mode
+  useEffect(() => {
+    if (!text.trim()) {
+      setSegments([]);
+      return;
+    }
+    setSegments(analyzeScriptEmotionsLocally(text, selectedTone));
+  }, [text, selectedTone]);
+
+  const planDef = getPlanDefinition(profile?.plan);
+  const pkgStatus = computePackageStatus(profile);
+  const isPaidUnlocked = Boolean(profile?.isAdmin || planDef.storyEmotionEnabled);
+
+  const maxCharsAllowed = profile
+    ? Math.min(
+        profile.isAdmin ? 15000 : profile.maxCharsPerGeneration || planDef.maxCharsPerGeneration,
+        pkgStatus.remainingCharacters
+      )
+    : 1500;
+
+  const currentVoice: VoicePersona =
+    VOICES.find((v) => v.id === selectedVoice) || VOICES[0];
+  const currentAccent =
+    COUNTRY_ACCENTS.find((a) => a.id === selectedAccent) || COUNTRY_ACCENTS[0];
+  const currentTone =
+    DELIVERY_TONES.find((t) => t.id === selectedTone) || DELIVERY_TONES[0];
+
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const estimatedSeconds = Math.ceil(wordCount / 2.5);
+  const estimatedSeconds = Math.max(2, Math.ceil(wordCount / (2.4 * speed)));
 
-  if (user && !isApproved) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
-        <div className="max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center">
-          <h1 className="text-xl font-bold text-amber-200">Waiting for Admin Approval</h1>
-          <p className="mt-2 text-sm text-amber-100/80">TTS Studio access will be available after your account is approved.</p>
-        </div>
-      </div>
-    );
-  }
+  const handleSelectAccent = (accentId: string) => {
+    const acc = COUNTRY_ACCENTS.find((a) => a.id === accentId);
+    if (!acc) return;
+    if (acc.proOnly && !profile?.isAdmin && !planDef.allowedAccents.includes(acc.id)) {
+      setNotice({
+        type: "warning",
+        text: `${acc.label} requires Creator Pro or Studio Enterprise. Upgrade your package to unlock all country accents.`,
+      });
+      return;
+    }
+    setSelectedAccent(accentId);
+    setNotice(null);
+  };
 
-  const handlePreviewVoice = async (e: React.MouseEvent, voiceItem: typeof VOICES[0]) => {
+  const handleSelectTone = (toneId: string) => {
+    const tone = DELIVERY_TONES.find((t) => t.id === toneId);
+    if (!tone) return;
+    if (tone.proOnly && !isPaidUnlocked) {
+      setNotice({
+        type: "warning",
+        text: `${tone.label} is included in Creator Pro and Studio Enterprise packages.`,
+      });
+      return;
+    }
+    setSelectedTone(toneId);
+    setNotice(null);
+  };
+
+  const handlePreviewVoice = (e: React.MouseEvent, voiceItem: VoicePersona) => {
     e.stopPropagation();
 
     if (previewingVoiceId === voiceItem.id) {
-      previewAudioRef.current?.pause();
+      stopSpeaking();
       setPreviewingVoiceId(null);
       return;
     }
 
-    previewAudioRef.current?.pause();
+    stopSpeaking();
+    stopFallbackRef.current?.();
+    setIsPlaying(false);
     setPreviewingVoiceId(voiceItem.id);
-    try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: voiceItem.sample, voiceId: voiceItem.voiceId, speed: voiceItem.baseRate }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Preview failed");
-      const audio = new Audio(result.audioUrl);
-      previewAudioRef.current = audio;
-      audio.onended = () => setPreviewingVoiceId(null);
-      audio.onerror = () => setPreviewingVoiceId(null);
-      await audio.play();
-    } catch (error) {
-      setPreviewingVoiceId(null);
-      setNotice({ type: "error", text: error instanceof Error ? error.message : "Voice preview failed" });
-    }
+
+    speakSingleText(voiceItem.sample, voiceItem, {
+      accentId: selectedAccent,
+      pitch,
+      rate: speed,
+      onStart: () => setPreviewingVoiceId(voiceItem.id),
+      onEnd: () => setPreviewingVoiceId(null),
+      onError: () => setPreviewingVoiceId(null),
+    });
   };
 
-  // Update Supabase Database Character Usage Counter
-  const updateUsedCharactersCount = async (charsUsed: number) => {
-    if (!user) return;
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("used_characters")
-        .eq("id", user.id)
-        .single();
-
-      const currentUsed = profile?.used_characters || 0;
-
-      await supabase
-        .from("profiles")
-        .update({ 
-          used_characters: currentUsed + charsUsed,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user.id);
-    } catch (err) {
-      console.error("Failed to update characters in DB:", err);
-    }
+  const handleSegmentEmotionChange = (idx: number, newEmotion: EmotionType) => {
+    setSegments((prev) =>
+      prev.map((seg, i) => (i === idx ? { ...seg, emotion: newEmotion } : seg))
+    );
   };
 
-  // Speech Generation
+  const handleApplyTemplate = (tmpl: (typeof SAMPLE_TEMPLATES)[0]) => {
+    const canUseTone =
+      !DELIVERY_TONES.find((t) => t.id === tmpl.toneId)?.proOnly || isPaidUnlocked;
+    if (canUseTone) {
+      setSelectedTone(tmpl.toneId);
+    }
+    setTitle(tmpl.label);
+    setText(tmpl.text.slice(0, Math.max(500, maxCharsAllowed)));
+    setNotice(null);
+  };
+
   const handleGenerate = async () => {
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      setNotice({ type: "error", text: "Please enter a script before generating audio." });
+      return;
+    }
 
-    if (text.length > characterLimit) {
-      setNotice({ type: "error", text: `Limit exceeded. Your plan allows up to ${characterLimit} characters.` });
+    if (!user) {
+      setNotice({
+        type: "warning",
+        text: "Please sign in to sync your package quota and save audio to your Library.",
+      });
+      router.push("/login");
+      return;
+    }
+
+    if (!pkgStatus.canGenerate) {
+      setNotice({
+        type: "error",
+        text: pkgStatus.blockReason || "Your package cannot generate right now.",
+      });
+      return;
+    }
+
+    if (text.length > (profile?.maxCharsPerGeneration || planDef.maxCharsPerGeneration) && !profile?.isAdmin) {
+      setNotice({
+        type: "error",
+        text: `Single script limit for ${planDef.name} is ${planDef.maxCharsPerGeneration.toLocaleString()} characters.`,
+      });
+      return;
+    }
+
+    if (text.length > pkgStatus.remainingCharacters && !profile?.isAdmin) {
+      setNotice({
+        type: "error",
+        text: `Not enough remaining characters (${pkgStatus.remainingCharacters.toLocaleString()} left). Please upgrade or shorten your script.`,
+      });
       return;
     }
 
     setIsGenerating(true);
+    setNotice(null);
     setPreviewingVoiceId(null);
+    stopSpeaking();
+    stopFallbackRef.current?.();
     setIsPlaying(false);
+    setActiveSegmentIdx(null);
 
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voiceId: currentVoice.voiceId, speed, pitch, emotion }),
+        body: JSON.stringify({
+          text,
+          voiceId: currentVoice.id,
+          accentId: currentAccent.id,
+          toneId: currentTone.id,
+          speed,
+          pitch,
+          customSegments: segments.length > 0 ? segments : undefined,
+        }),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Audio generation failed");
 
-      setAudioUrl(result.audioUrl);
-      setHasAudio(true);
-      await updateUsedCharactersCount(text.length);
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Audio generation failed");
+      }
+
+      const finalSegments: AnalyzedSegment[] =
+        Array.isArray(result.segments) && result.segments.length > 0
+          ? result.segments
+          : segments;
+      setSegments(finalSegments);
+
+      let finalAudioUrl: string;
+      const engineUsed: "gemini-tts" | "web-speech-fallback" =
+        result.engine === "gemini-tts" && result.audioUrl
+          ? "gemini-tts"
+          : "web-speech-fallback";
+
+      setAudioEngine(engineUsed);
+
+      if (engineUsed === "gemini-tts" && result.audioUrl) {
+        finalAudioUrl = result.audioUrl;
+        setAudioUrl(finalAudioUrl);
+        setHasAudio(true);
+
+        // Auto-play neural WAV output cleanly
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.src = finalAudioUrl;
+            audioRef.current.play().catch(() => undefined);
+          }
+        }, 80);
+      } else {
+        // Multi-segment expressive Web Speech playback + downloadable WAV clip
+        finalAudioUrl = await generateFallbackWavUrl(finalSegments, estimatedSeconds);
+        setAudioUrl(finalAudioUrl);
+        setHasAudio(true);
+        setIsPlaying(true);
+
+        stopFallbackRef.current = speakSegmentsExpressively(finalSegments, currentVoice, {
+          accentId: currentAccent.id,
+          basePitch: pitch,
+          baseRate: speed,
+          onSegmentStart: (idx) => setActiveSegmentIdx(idx),
+          onComplete: () => {
+            setIsPlaying(false);
+            setActiveSegmentIdx(null);
+          },
+          onError: () => {
+            setIsPlaying(false);
+            setActiveSegmentIdx(null);
+          },
+        });
+      }
+
+      // Track character quota in Firestore & save to Library
+      await trackCharacterUsage(user.uid, text.length);
+
+      const saved = await saveGenerationRecord({
+        userId: user.uid,
+        title: title.trim() || `${currentVoice.name} · ${currentTone.label}`,
+        text,
+        voiceId: currentVoice.id,
+        voiceName: currentVoice.name,
+        accentId: currentAccent.id,
+        accentLabel: currentAccent.label,
+        toneId: currentTone.id,
+        toneLabel: currentTone.label,
+        engine: engineUsed,
+        durationSeconds: result.durationSeconds || estimatedSeconds,
+        characterCount: text.length,
+        segmentsJson: JSON.stringify(finalSegments),
+      });
+
+      await cacheAudioClip(saved.id, finalAudioUrl);
+
+      if (profile) {
+        const updatedProfile = {
+          ...profile,
+          usedCharacters: (profile.usedCharacters || 0) + text.length,
+        };
+        await syncUserLifecycleNotifications(updatedProfile);
+      }
+
+      setNotice({
+        type: "success",
+        text:
+          engineUsed === "gemini-tts"
+            ? "Neural multi-emotion WAV audio generated and saved to your Library."
+            : "Expressive segmented speech generated and saved to your Library.",
+      });
     } catch (error) {
-      setNotice({ type: "error", text: error instanceof Error ? error.message : "Audio generation failed" });
+      setNotice({
+        type: "error",
+        text: error instanceof Error ? error.message : "Audio generation failed.",
+      });
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleTogglePlay = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) audio.pause();
-    else void audio.play();
-    setIsPlaying(!isPlaying);
+    if (audioEngine === "gemini-tts" && audioRef.current && audioUrl) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(() => undefined);
+      }
+      return;
+    }
+
+    if (isPlaying) {
+      stopFallbackRef.current?.();
+      stopSpeaking();
+      setIsPlaying(false);
+      setActiveSegmentIdx(null);
+    } else {
+      const segs =
+        segments.length > 0
+          ? segments
+          : analyzeScriptEmotionsLocally(text, selectedTone);
+      setIsPlaying(true);
+      stopFallbackRef.current = speakSegmentsExpressively(segs, currentVoice, {
+        accentId: currentAccent.id,
+        basePitch: pitch,
+        baseRate: speed,
+        onSegmentStart: (idx) => setActiveSegmentIdx(idx),
+        onComplete: () => {
+          setIsPlaying(false);
+          setActiveSegmentIdx(null);
+        },
+        onError: () => {
+          setIsPlaying(false);
+          setActiveSegmentIdx(null);
+        },
+      });
+    }
   };
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDownload = async () => {
     if (!audioUrl) return;
-
     try {
       setIsDownloading(true);
       const a = document.createElement("a");
       a.href = audioUrl;
-      a.download = `${currentVoice.name}_voice.mp3`;
+      const safeName = (title.trim() || currentVoice.name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_");
+      a.download = `${safeName}_${currentAccent.code.toLowerCase()}.wav`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } catch (error) {
-      setNotice({ type: "error", text: error instanceof Error ? error.message : "Download failed" });
     } finally {
       setIsDownloading(false);
     }
   };
 
   const handleReset = () => {
-    audioRef.current?.pause();
-    previewAudioRef.current?.pause();
+    stopSpeaking();
+    stopFallbackRef.current?.();
+    if (audioRef.current) audioRef.current.pause();
+    setTitle("");
     setText("");
+    setSegments([]);
     setAudioUrl(null);
-    setNotice(null);
     setHasAudio(false);
     setIsPlaying(false);
+    setActiveSegmentIdx(null);
+    setNotice(null);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white relative flex flex-col justify-between overflow-hidden p-4 md:p-8 font-sans">
-      
-      {/* Glow Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto w-full relative z-10 space-y-8">
-        {notice && (
-          <div className={`rounded-xl border px-4 py-3 text-sm ${notice.type === "error" ? "border-rose-500/40 bg-rose-500/10 text-rose-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
-            {notice.text}
-          </div>
-        )}
-        
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-cyan-500/10 border border-purple-500/30 text-xs font-semibold text-purple-300">
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Professional AI Audio Studio
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
-            Echo Text-to-Speech
-          </h1>
-          <p className="text-slate-400 text-sm md:text-base max-w-xl mx-auto">
-            Generate realistic audio with specialized male & female voice styles.
-          </p>
-        </div>
-
-        {/* User Status Bar - Automatically hides Upgrade Button if User has Active Pro Plan */}
-        {isProUser ? (
-          <div className="p-4 rounded-2xl border bg-emerald-950/40 border-emerald-500/40 text-emerald-200 flex items-center gap-3 backdrop-blur-xl shadow-lg">
-            <Crown className="w-5 h-5 text-amber-400 animate-bounce" />
-            <div>
-              <p className="text-sm font-bold flex items-center gap-2">
-                PRO Member Account Active <CheckCircle2 className="w-4 h-4 text-emerald-400 inline" />
-              </p>
-              <p className="text-xs opacity-80">
-                You have 10,000 characters available per script generation.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 rounded-2xl border bg-amber-950/40 border-amber-500/30 text-amber-200 flex items-center justify-between backdrop-blur-xl">
-            <div className="flex items-center gap-3">
-              <span className="text-amber-400 font-bold text-xs px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30">Free</span>
-              <div>
-                <p className="text-sm font-bold">Free Trial Active (10,000 Characters Limit)</p>
-                <p className="text-xs opacity-80">Generate up to 10,000 characters per script.</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => router.push("/dashboard")} 
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:scale-105 text-slate-950 text-xs font-bold transition-all shadow-lg"
-            >
-              Upgrade Plan
-            </button>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Voices List */}
-          <div className="lg:col-span-5 space-y-4 bg-slate-900/50 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <h2 className="text-base font-bold flex items-center gap-2 text-slate-100">
-                <Mic className="w-5 h-5 text-pink-400" /> Voice Presets (Realistic Tones)
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 max-h-[520px] overflow-y-auto pr-1">
-              {VOICES.map((voice) => {
-                const isSelected = selectedVoice === voice.id;
-                const isPreviewing = previewingVoiceId === voice.id;
-
-                return (
-                  <div
-                    key={voice.id}
-                    onClick={() => setSelectedVoice(voice.id)}
-                    className={`p-3.5 rounded-2xl border text-left cursor-pointer transition-all duration-300 flex items-center justify-between ${
-                      isSelected
-                        ? `bg-slate-800/90 border-purple-500/80 shadow-lg ${voice.glow} scale-[1.01]`
-                        : "bg-slate-900/30 border-white/5 hover:border-white/20 hover:bg-slate-800/40"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${voice.color} flex items-center justify-center font-bold text-white shadow-md`}>
-                        {voice.name[0]}
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-100 text-sm">{voice.name}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                            voice.gender === "Female" 
-                              ? "bg-pink-500/20 text-pink-300 border-pink-500/30" 
-                              : "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                          }`}>
-                            {voice.gender}
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Top Package Synced Status Bar */}
+        {authReady && (
+          <div
+            className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+              !user
+                ? "border-slate-800 bg-slate-900/70"
+                : !pkgStatus.canGenerate
+                ? "border-rose-500/50 bg-rose-950/30"
+                : pkgStatus.isExpiringSoon || pkgStatus.isQuotaLow
+                ? "border-amber-500/40 bg-amber-950/20"
+                : "border-slate-800 bg-slate-900/60"
+            }`}
+          >
+            {!user ? (
+              <>
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold text-white">
+                    Sign in to sync your package quota & save audio to Library
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    New accounts start with Starter Free (10,000 characters / 30 days).
+                  </p>
+                </div>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold whitespace-nowrap self-start sm:self-auto"
+                >
+                  Sign In / Create Account
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5">
+                    {!pkgStatus.canGenerate ? (
+                      <AlertTriangle className="w-5 h-5 text-rose-400" />
+                    ) : profile?.isAdmin ? (
+                      <Crown className="w-5 h-5 text-amber-400" />
+                    ) : (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-bold text-white text-sm">
+                        {profile?.isAdmin ? "Admin Studio Access" : planDef.name}
+                      </span>
+                      <span className="text-slate-500">·</span>
+                      <span className="font-mono tabular-nums text-slate-300">
+                        {pkgStatus.remainingCharacters.toLocaleString()} /{" "}
+                        {(profile?.characterLimit || planDef.characterLimit).toLocaleString()} chars remaining
+                      </span>
+                      {!profile?.isAdmin && (
+                        <>
+                          <span className="text-slate-500">·</span>
+                          <span className="font-mono tabular-nums text-slate-400">
+                            {pkgStatus.isExpired
+                              ? "Expired"
+                              : `${pkgStatus.daysRemaining} days left`}
                           </span>
-                        </div>
-                        <p className="text-xs text-slate-400">{voice.accent} • {voice.style}</p>
-                      </div>
+                        </>
+                      )}
                     </div>
+                    {pkgStatus.blockReason ? (
+                      <p className="text-xs text-rose-300">{pkgStatus.blockReason}</p>
+                    ) : pkgStatus.isExpiringSoon || pkgStatus.isQuotaLow ? (
+                      <p className="text-xs text-amber-300">
+                        Your package is nearing its limit or renewal date.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400">
+                        {isPaidUnlocked
+                          ? "All 6 country accents and Dynamic Story Multi-Emotion engine unlocked."
+                          : "Starter tier active (US/UK accents). Upgrade to Creator Pro for all accents & Story Multi-Emotion."}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <Link
+                    href="/library"
+                    className="px-3.5 py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-medium text-slate-200 whitespace-nowrap"
+                  >
+                    Audio Library
+                  </Link>
+                  {(!isPaidUnlocked || !pkgStatus.canGenerate || pkgStatus.isExpiringSoon) && (
+                    <Link
+                      href="/checkout?plan=pro"
+                      className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold whitespace-nowrap"
+                    >
+                      {pkgStatus.isExpired || pkgStatus.isQuotaExhausted ? "Renew / Upgrade" : "Upgrade to Pro"}
+                    </Link>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Notice Banner */}
+        {notice && (
+          <div
+            role="status"
+            className={`rounded-xl border px-4 py-3 text-xs flex items-center justify-between gap-4 ${
+              notice.type === "error"
+                ? "border-rose-500/40 bg-rose-950/30 text-rose-200"
+                : notice.type === "warning"
+                ? "border-amber-500/40 bg-amber-950/30 text-amber-200"
+                : "border-emerald-500/40 bg-emerald-950/30 text-emerald-200"
+            }`}
+          >
+            <span>{notice.text}</span>
+            <div className="flex items-center gap-3 shrink-0">
+              {notice.type === "warning" && (
+                <Link href="/checkout?plan=pro" className="underline font-semibold">
+                  View Packages
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => setNotice(null)}
+                className="opacity-70 hover:opacity-100"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Studio Workspace Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Country Accent, Delivery Tone & Voice Personas */}
+          <div className="lg:col-span-5 space-y-5">
+            {/* Country Accent Selector */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Globe2 className="w-4 h-4 text-violet-400" />
+                  Country & Regional Accent
+                </h2>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {currentAccent.code}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {COUNTRY_ACCENTS.map((acc) => {
+                  const locked =
+                    acc.proOnly &&
+                    user &&
+                    !profile?.isAdmin &&
+                    !planDef.allowedAccents.includes(acc.id);
+                  const active = selectedAccent === acc.id;
+
+                  return (
                     <button
-                      onClick={(e) => handlePreviewVoice(e, voice)}
-                      className={`p-2 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
-                        isPreviewing 
-                          ? "bg-purple-600 text-white animate-pulse" 
-                          : "bg-slate-800 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30"
+                      key={acc.id}
+                      type="button"
+                      onClick={() => handleSelectAccent(acc.id)}
+                      className={`p-2.5 rounded-lg border text-left transition-colors flex items-center justify-between gap-2 ${
+                        active
+                          ? "border-violet-500 bg-violet-600/15 text-white"
+                          : locked
+                          ? "border-slate-800/70 bg-slate-950/50 text-slate-500 hover:border-slate-700"
+                          : "border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700"
                       }`}
                     >
-                      {isPreviewing ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                      <span>{isPreviewing ? "Playing" : "Preview"}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate">{acc.country}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{acc.code}</p>
+                      </div>
+                      {locked && <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
                     </button>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Script Area & Controls */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl space-y-5">
-              
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                <span className="text-xs text-slate-400 font-semibold flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5 text-pink-400" /> Preset Prompts:
-                </span>
-                {SAMPLE_TEMPLATES.map((tmpl, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setText(tmpl.text.slice(0, characterLimit))}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-purple-600/30 border border-white/10 text-slate-300 transition-colors whitespace-nowrap"
-                  >
-                    {tmpl.label}
-                  </button>
-                ))}
+            {/* Delivery Tone Selector */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-sky-400" />
+                  Delivery Tone & Performance
+                </h2>
               </div>
 
               <div className="space-y-2">
+                {DELIVERY_TONES.map((tone) => {
+                  const locked = tone.proOnly && user && !isPaidUnlocked;
+                  const active = selectedTone === tone.id;
+
+                  return (
+                    <button
+                      key={tone.id}
+                      type="button"
+                      onClick={() => handleSelectTone(tone.id)}
+                      className={`w-full p-3 rounded-lg border text-left transition-colors flex items-start justify-between gap-3 ${
+                        active
+                          ? "border-violet-500 bg-violet-600/15"
+                          : locked
+                          ? "border-slate-800/60 bg-slate-950/40 text-slate-500 hover:border-slate-700"
+                          : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="space-y-0.5">
+                        <p className={`text-xs font-semibold ${active ? "text-white" : "text-slate-200"}`}>
+                          {tone.label}
+                        </p>
+                        <p className="text-[11px] text-slate-400 leading-snug">
+                          {tone.description}
+                        </p>
+                      </div>
+                      {locked && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 shrink-0 mt-0.5">
+                          <Lock className="w-3 h-3" /> Pro
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Voice Personas */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Mic className="w-4 h-4 text-emerald-400" />
+                  Voice Persona
+                </h2>
+                <span className="text-[11px] text-slate-400">
+                  {VOICES.length} Voices
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+                {VOICES.map((voice) => {
+                  const isSelected = selectedVoice === voice.id;
+                  const isPreviewing = previewingVoiceId === voice.id;
+                  return (
+                    <div
+                      key={voice.id}
+                      onClick={() => setSelectedVoice(voice.id)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors flex items-center justify-between gap-3 ${
+                        isSelected
+                          ? "border-violet-500 bg-slate-800/80"
+                          : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-white shrink-0">
+                          {voice.name[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="font-bold text-white">{voice.name}</span>
+                            <span className="text-slate-500">·</span>
+                            <span className="text-slate-400">{voice.gender}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 truncate">
+                            {voice.style}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handlePreviewVoice(e, voice)}
+                        className={`px-2.5 py-1.5 rounded-md border text-[11px] font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
+                          isPreviewing
+                            ? "border-violet-500 bg-violet-600 text-white"
+                            : "border-slate-700 bg-slate-900 text-slate-300 hover:text-white"
+                        }`}
+                      >
+                        {isPreviewing ? (
+                          <>
+                            <VolumeX className="w-3.5 h-3.5" /> Stop
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3.5 h-3.5" /> Preview
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Script Editor, Emotion Breakdown, Controls & Player */}
+          <div className="lg:col-span-7 space-y-5">
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 md:p-6 space-y-5">
+              {/* Sample Script Presets */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-violet-400" />
+                    Sample Scripts:
+                  </span>
+                  {SAMPLE_TEMPLATES.map((tmpl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleApplyTemplate(tmpl)}
+                      className="px-2.5 py-1 rounded-md border border-slate-800 bg-slate-950 hover:border-slate-700 text-xs text-slate-300 hover:text-white transition-colors"
+                    >
+                      {tmpl.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional Clip Title */}
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Project or Scene Title (optional, e.g. Chapter 1 Dialogue)"
+                className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500"
+              />
+
+              {/* Main Script Textarea */}
+              <div className="space-y-2">
                 <textarea
                   value={text}
-                  maxLength={characterLimit}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder={`Type or paste your script here (${characterLimit.toLocaleString()} chars limit)...`}
-                  rows={8}
-                  className="w-full bg-slate-950/70 border border-white/10 rounded-2xl p-4 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-purple-500/80 transition-all resize-none text-sm md:text-base"
+                  placeholder="Write or paste your story, speech, or commercial script here... In Story Mode, angry, laughing, humorous, and sad sentences are automatically directed!"
+                  rows={7}
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500 resize-y leading-relaxed"
                 />
-
-                <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 font-mono tabular-nums px-1">
                   <div className="flex items-center gap-3">
                     <span>{wordCount} words</span>
-                    <span>•</span>
+                    <span>·</span>
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-cyan-400" /> ~{estimatedSeconds}s audio
+                      <Clock className="w-3.5 h-3.5 text-sky-400" /> ~{estimatedSeconds}s
                     </span>
                   </div>
-                  <span className={text.length >= characterLimit ? "text-amber-400 font-bold" : "text-slate-400"}>
-                    {text.length} / {characterLimit.toLocaleString()} chars
+                  <span
+                    className={
+                      text.length > (profile?.maxCharsPerGeneration || planDef.maxCharsPerGeneration) &&
+                      !profile?.isAdmin
+                        ? "text-rose-400 font-semibold"
+                        : "text-slate-400"
+                    }
+                  >
+                    {text.length.toLocaleString()} /{" "}
+                    {(profile?.isAdmin
+                      ? 15000
+                      : profile?.maxCharsPerGeneration || planDef.maxCharsPerGeneration
+                    ).toLocaleString()}{" "}
+                    chars
                   </span>
                 </div>
               </div>
 
-              {/* Sliders & Dropdowns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+              {/* Speed & Pitch Sliders */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-medium text-slate-400">
-                    <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-purple-400" /> Speed</span>
-                    <span className="text-purple-300 font-bold">{speed}x</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <Settings2 className="w-3.5 h-3.5 text-violet-400" /> Speaking Speed
+                    </span>
+                    <span className="font-mono tabular-nums text-white font-semibold">
+                      {speed.toFixed(1)}x
+                    </span>
                   </div>
                   <input
                     type="range"
-                    min="0.5"
-                    max="1.8"
+                    min="0.6"
+                    max="1.6"
                     step="0.1"
                     value={speed}
                     onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                    className="w-full accent-purple-500 bg-slate-800 rounded-lg cursor-pointer h-1.5"
+                    className="w-full accent-violet-500 cursor-pointer"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-medium text-slate-400">
-                    <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-cyan-400" /> Pitch</span>
-                    <span className="text-cyan-300 font-bold">{pitch}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-sky-400" /> Vocal Pitch
+                    </span>
+                    <span className="font-mono tabular-nums text-white font-semibold">
+                      {pitch.toFixed(1)}
+                    </span>
                   </div>
                   <input
                     type="range"
-                    min="0.5"
-                    max="1.5"
+                    min="0.6"
+                    max="1.4"
                     step="0.1"
                     value={pitch}
                     onChange={(e) => setPitch(parseFloat(e.target.value))}
-                    className="w-full accent-cyan-500 bg-slate-800 rounded-lg cursor-pointer h-1.5"
+                    className="w-full accent-sky-500 cursor-pointer"
                   />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                    <Smile className="w-3.5 h-3.5 text-pink-400" /> Tone Expression
-                  </label>
-                  <select
-                    value={emotion}
-                    onChange={(e) => setEmotion(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-pink-500"
-                  >
-                    {EMOTIONS.map((emo) => (
-                      <option key={emo} value={emo}>{emo}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                    <FileType className="w-3.5 h-3.5 text-amber-400" /> Output Format
-                  </label>
-                  <select
-                    value={audioFormat}
-                    onChange={(e) => setAudioFormat(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                  >
-                    {FORMATS.map((fmt) => (
-                      <option key={fmt} value={fmt}>{fmt}</option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-2">
-                <button 
+              {/* Action Row */}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
                   onClick={handleReset}
-                  className="p-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-colors"
-                  title="Reset Text"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-3.5 h-3.5" /> Clear
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleGenerate}
-                  disabled={isGenerating || !text.trim() || text.length > characterLimit}
-                  className={`px-7 py-3.5 rounded-2xl font-bold flex items-center gap-2.5 transition-all shadow-xl ${
-                    isGenerating || !text.trim() || text.length > characterLimit
+                  disabled={isGenerating || !text.trim()}
+                  className={`px-6 py-3 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                    isGenerating || !text.trim()
                       ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:scale-[1.02] text-white shadow-purple-500/25"
+                      : "bg-violet-600 hover:bg-violet-500 text-white"
                   }`}
                 >
                   {isGenerating ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Generating...
+                      Directing & Synthesizing...
                     </>
                   ) : (
                     <>
@@ -637,56 +912,117 @@ export default function TTSStudio() {
                   )}
                 </button>
               </div>
-
             </div>
 
-            {/* Generated Audio Control Box */}
+            {/* Generated Audio Player Box */}
             {hasAudio && (
-              <div className="bg-slate-900/60 backdrop-blur-xl border border-purple-500/30 p-5 rounded-3xl shadow-xl space-y-4">
+              <div className="rounded-xl border border-violet-500/40 bg-slate-900/80 p-5 space-y-4">
                 <audio
                   ref={audioRef}
-                  src={audioUrl ?? undefined}
+                  src={audioEngine === "gemini-tts" ? audioUrl ?? undefined : undefined}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                   onEnded={() => setIsPlaying(false)}
+                  controls={audioEngine === "gemini-tts"}
+                  className={audioEngine === "gemini-tts" ? "w-full h-10" : "hidden"}
                 />
-                <div className="flex items-center justify-between">
+
+                <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <button
+                      type="button"
                       onClick={handleTogglePlay}
-                      className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg hover:scale-105 transition-transform"
+                      className="w-11 h-11 rounded-xl bg-violet-600 hover:bg-violet-500 flex items-center justify-center text-white transition-colors shrink-0"
                     >
-                      {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white ml-0.5" />}
+                      {isPlaying ? (
+                        <Pause className="w-5 h-5 fill-white" />
+                      ) : (
+                        <Play className="w-5 h-5 fill-white ml-0.5" />
+                      )}
                     </button>
                     <div>
-                      <h4 className="font-bold text-sm text-slate-200">{currentVoice.name} ({currentVoice.gender})</h4>
-                      <p className="text-xs text-slate-400">{emotion} Tone • {audioFormat} Format</p>
+                      <h4 className="text-sm font-bold text-white">
+                        {title.trim() || `${currentVoice.name} (${currentAccent.code})`}
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        {currentTone.label} · {currentAccent.country} ·{" "}
+                        {audioEngine === "gemini-tts" ? "Neural HD WAV" : "Expressive Browser Voice"}
+                      </p>
                     </div>
                   </div>
 
-                  <button 
+                  <button
+                    type="button"
                     onClick={handleDownload}
-                    disabled={isDownloading}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold flex items-center gap-2 border border-white/10 transition-colors text-cyan-300"
+                    disabled={isDownloading || !audioUrl}
+                    className="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white flex items-center gap-2 transition-colors"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    {isDownloading ? "Preparing..." : `Download ${audioFormat}`}
+                    <Download className="w-3.5 h-3.5 text-sky-400" />
+                    {isDownloading ? "Preparing..." : "Download WAV"}
                   </button>
                 </div>
               </div>
             )}
 
-          </div>
+            {/* Sentence-by-Sentence Emotion Breakdown Panel */}
+            {segments.length > 0 && (
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      Sentence Emotion Director ({segments.length} Lines)
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Each sentence automatically switches vocal emotion. You can fine-tune any line below before regenerating.
+                    </p>
+                  </div>
+                </div>
 
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {segments.map((seg, idx) => {
+                    const emo = EMOTION_PROFILES[seg.emotion] || EMOTION_PROFILES.calm;
+                    const isLineActive = activeSegmentIdx === idx;
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                          isLineActive
+                            ? "border-violet-500 bg-violet-950/30"
+                            : "border-slate-800 bg-slate-950/50"
+                        }`}
+                      >
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <span className="text-[10px] font-mono text-slate-500">
+                            Line {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <p className="text-xs text-slate-200 leading-relaxed">
+                            {seg.text}
+                          </p>
+                        </div>
+
+                        <select
+                          value={seg.emotion}
+                          onChange={(e) =>
+                            handleSegmentEmotionChange(idx, e.target.value as EmotionType)
+                          }
+                          aria-label={`Emotion for line ${idx + 1}`}
+                          className={`text-xs font-medium rounded-md border px-2.5 py-1.5 shrink-0 focus:outline-none ${emo.colorClass}`}
+                        >
+                          {EMOTION_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt} className="bg-slate-900 text-slate-100">
+                              {EMOTION_PROFILES[opt].label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      <footer className="pt-8 pb-2 text-center z-10">
-        <p className="text-xs text-slate-500 flex items-center justify-center gap-1 font-medium tracking-wide">
-          made with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline" /> by <span className="text-slate-300 font-bold">ABM</span>
-        </p>
-      </footer>
-
     </div>
   );
 }

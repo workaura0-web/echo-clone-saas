@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/supabase";
+import { auth } from "@/lib/firebase/auth";
+import { updatePassword } from "firebase/auth";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function ResetPasswordPage() {
@@ -28,39 +29,45 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    setLoading(true);
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    if (updateError) {
-      setError(updateError.message);
-    } else {
-      setMessage("Password updated. You can now log in.");
-      setTimeout(() => router.replace("/login"), 1200);
+    if (!auth.currentUser) {
+      setError("Please sign in or use the password reset link sent to your email.");
+      return;
     }
-    setLoading(false);
+
+    setLoading(true);
+    try {
+      await updatePassword(auth.currentUser, password);
+      setMessage("Password updated successfully. Redirecting to studio...");
+      setTimeout(() => router.replace("/studio/tts"), 1200);
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Failed to update password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
-      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-5 rounded-2xl border border-white/10 bg-slate-900 p-6">
+    <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6 font-sans">
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-5 rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur-xl p-6 shadow-2xl">
         <div>
-          <h1 className="text-2xl font-bold">Set New Password</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">Set New Password</h1>
           <p className="mt-1 text-sm text-slate-400">Choose a new password for your account.</p>
         </div>
-        {error && <p role="alert" className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>}
-        {message && <p role="status" className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-200">{message}</p>}
+        {error && <p role="alert" className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-200 border border-rose-500/20">{error}</p>}
+        {message && <p role="status" className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-200 border border-emerald-500/20">{message}</p>}
         <div className="relative">
-        <input
-          type={showPassword ? "text" : "password"}
-          minLength={8}
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="New password"
-          className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 pr-10 text-sm"
-        />
-        <button type="button" onClick={() => setShowPassword((current) => !current)} title={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
+          <input
+            type={showPassword ? "text" : "password"}
+            minLength={8}
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="New password"
+            className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 pr-10 text-sm focus:outline-none focus:border-purple-500"
+          />
+          <button type="button" onClick={() => setShowPassword((current) => !current)} title={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
         <input
           type={showPassword ? "text" : "password"}
@@ -69,9 +76,9 @@ export default function ResetPasswordPage() {
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           placeholder="Confirm new password"
-          className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:border-purple-500"
         />
-        <button type="submit" disabled={loading} className="w-full rounded-lg bg-purple-600 px-4 py-2 font-semibold disabled:opacity-50">
+        <button type="submit" disabled={loading} className="w-full rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-2.5 font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-all">
           {loading ? "Updating..." : "Update Password"}
         </button>
       </form>

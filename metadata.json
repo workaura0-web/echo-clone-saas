@@ -1,0 +1,10 @@
+{
+  "name": "Echo Clone SaaS",
+  "description": "AI Voice Generator and Voice Cloning Platform",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

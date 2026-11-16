@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/supabase";
+import { loginWithEmail, signInWithGoogle, resetPassword } from "@/lib/firebase/auth";
 import { Sparkles, Mail, Lock, ArrowRight, Heart, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
@@ -21,18 +21,32 @@ export default function LoginPage() {
     setErrorMessage(null);
     setNotice(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      await loginWithEmail(email.trim(), password);
+      router.replace("/studio/tts");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to sign in";
+      if (msg.includes("operation-not-allowed")) {
+        setErrorMessage("Email/password sign-in is disabled on this project. Please use Continue with Google.");
+      } else {
+        setErrorMessage(msg);
+      }
+    } finally {
       setLoading(false);
-      return;
     }
+  };
 
-    router.replace("/dashboard");
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      await signInWithGoogle();
+      router.replace("/studio/tts");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Google sign-in cancelled or failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForgotPassword = async () => {
@@ -45,13 +59,14 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMessage(null);
     setNotice(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
-
-    if (error) setErrorMessage(error.message);
-    else setNotice("Password reset email sent. Check your inbox.");
-    setLoading(false);
+    try {
+      await resetPassword(normalizedEmail);
+      setNotice("Password reset email sent. Check your inbox.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not send reset email");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,7 +79,7 @@ export default function LoginPage() {
       {/* Top Spacer / Header Brand */}
       <div className="pt-4 z-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-white/10 text-xs text-slate-300 backdrop-blur-md">
-          <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Echo AI Voice Platform
+          <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Echo Voice Platform
         </div>
       </div>
 
@@ -77,7 +92,7 @@ export default function LoginPage() {
             Welcome Back
           </h1>
           <p className="text-xs text-slate-400">
-            Sign in to your Echo Clone account
+            Sign in to your Echo Studio account
           </p>
         </div>
 
@@ -92,6 +107,41 @@ export default function LoginPage() {
             {notice}
           </div>
         )}
+
+        {/* Google One-Click Sign In */}
+        <button
+          onClick={handleGoogleSignIn}
+          type="button"
+          disabled={loading}
+          className="w-full py-2.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-sm font-semibold flex items-center justify-center gap-3 transition-all text-slate-200"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24">
+            <path
+              fill="#EA4335"
+              d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.1 9 5 12 5z"
+            />
+            <path
+              fill="#4285F4"
+              d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.1-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"
+            />
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-slate-800 w-full" />
+          <span className="bg-slate-900 px-3 text-xs text-slate-500 uppercase tracking-wider font-semibold absolute">
+            or email
+          </span>
+        </div>
 
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">

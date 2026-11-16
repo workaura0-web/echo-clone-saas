@@ -1,40 +1,53 @@
 "use client";
-import { supabase } from "@/lib/supabase/supabase";
+
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signupWithEmail, signInWithGoogle } from "@/lib/firebase/auth";
 import { ArrowRight, Lock, Mail, User, CheckCircle2, Eye, EyeOff, MessageCircle } from "lucide-react";
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null);
 
-    // Supabase Auth Integration Logic Place
-    console.log("Signing up with:", { fullName, email, password });
-
-    setTimeout(() => {
+    try {
+      await signupWithEmail(email.trim(), password, fullName);
+      router.replace("/studio/tts");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to create account";
+      if (msg.includes("operation-not-allowed")) {
+        setErrorMessage("Email/password sign-up is currently disabled. Please use Continue with Google above.");
+      } else {
+        setErrorMessage(msg);
+      }
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
- const handleGoogleSignUp = async () => {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    },
-  });
+  const handleGoogleSignUp = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      await signInWithGoogle();
+      router.replace("/studio/tts");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Google sign-in cancelled or failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  if (error) {
-    console.error("Google Sign-In Error:", error.message);
-  }
-};
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
       {/* Background Glow */}
@@ -47,17 +60,28 @@ export default function SignUpPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-white mb-2">
-            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 p-[1px] rounded-lg"><span className="block bg-slate-950 px-2 py-0.5 rounded-[7px] text-sm font-extrabold">ECHO</span></span>
-            <span className="text-slate-100">Clone</span>
+            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 p-[1px] rounded-lg">
+              <span className="block bg-slate-950 px-2 py-0.5 rounded-[7px] text-sm font-extrabold">ECHO</span>
+            </span>
+            <span className="text-slate-100">Studio</span>
           </Link>
-          <h1 className="text-2xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">Create an Account</h1>
-          <p className="text-xs text-slate-400">Get 10,000 characters every month</p>
+          <h1 className="text-2xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
+            Create an Account
+          </h1>
+          <p className="text-xs text-slate-400">Start with 10,000 characters free for 30 days</p>
         </div>
+
+        {errorMessage && (
+          <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-center text-xs text-rose-200">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Google OAuth Button */}
         <button
           onClick={handleGoogleSignUp}
           type="button"
+          disabled={isLoading}
           className="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-sm font-semibold flex items-center justify-center gap-3 transition-all"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -83,8 +107,8 @@ export default function SignUpPage() {
 
         {/* Divider */}
         <div className="relative flex items-center justify-center">
-          <div className="border-t border-zinc-800 w-full" />
-          <span className="bg-zinc-900 px-3 text-xs text-zinc-500 uppercase tracking-wider font-semibold absolute">
+          <div className="border-t border-slate-800 w-full" />
+          <span className="bg-slate-900 px-3 text-xs text-slate-500 uppercase tracking-wider font-semibold absolute">
             or email
           </span>
         </div>
@@ -93,50 +117,51 @@ export default function SignUpPage() {
         <form onSubmit={handleSignUp} className="space-y-4">
           {/* Full Name Input */}
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400 font-medium">Full Name</label>
+            <label className="text-xs text-slate-400 font-medium">Full Name</label>
             <div className="relative">
-              <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 required
                 placeholder="John Doe"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-all"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500/80 transition-all"
               />
             </div>
           </div>
 
           {/* Email Input */}
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400 font-medium">Email Address</label>
+            <label className="text-xs text-slate-400 font-medium">Email Address</label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-all"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500/80 transition-all"
               />
             </div>
           </div>
 
           {/* Password Input */}
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400 font-medium">Password</label>
+            <label className="text-xs text-slate-400 font-medium">Password</label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type={showPassword ? "text" : "password"}
                 required
+                minLength={6}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-all"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500/80 transition-all"
               />
-              <button type="button" onClick={() => setShowPassword((current) => !current)} title={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+              <button type="button" onClick={() => setShowPassword((current) => !current)} title={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
@@ -146,7 +171,7 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 pt-3"
+            className="w-full py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <span>Creating account...</span>
@@ -160,20 +185,20 @@ export default function SignUpPage() {
         </form>
 
         {/* Perks Checklist */}
-        <div className="border-t border-zinc-800/80 pt-4 space-y-2">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />
-            <span>No credit card required to start</span>
+        <div className="border-t border-slate-800/80 pt-4 space-y-2">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Zero API keys required</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />
-            <span>Instant access to TTS Studio & Voice Cloner</span>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Instant access to Story Emotion & Multi-Accent Studio</span>
           </div>
         </div>
 
         {/* Footer Link */}
         <div className="flex items-center justify-center pt-1">
-          <a href="https://wa.me/923253229649?text=Hello%20ABM%2C%20I%20need%20help%20with%20Echo%20Clone" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20" title="Contact ABM on WhatsApp">
+          <a href="https://wa.me/923253229649?text=Hello%20ABM%2C%20I%20need%20help%20with%20Echo%20Studio" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20" title="Contact ABM on WhatsApp">
             <MessageCircle className="h-4 w-4" /> Contact (ABM)
           </a>
         </div>

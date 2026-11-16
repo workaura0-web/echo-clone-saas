@@ -1,33 +1,49 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase/supabase"; // Path verify kar lein
-import type { User } from "@supabase/supabase-js";
-import { 
-  LogOut, 
-  Sparkles, 
-  Zap, 
-  Activity, 
-  CreditCard, 
-  User as UserIcon,
+import {
+  auth,
+  ensureUserProfile,
+  logOut,
+  subscribeUserProfile,
+  UserProfile,
+} from "@/lib/firebase/auth";
+import {
+  AppNotification,
+  markAllNotificationsRead,
+  markNotificationRead,
+  subscribeUserNotifications,
+  syncUserLifecycleNotifications,
+} from "@/lib/firebase/db";
+import { computePackageStatus, getPlanDefinition } from "@/lib/plans";
+import { onAuthStateChanged, User } from "firebase/auth";
+import {
+  Activity,
+  AlertTriangle,
+  Bell,
+  Calendar,
+  Check,
+  CheckCheck,
+  CreditCard,
+  LogOut,
+  Music,
   Plus,
-  Heart
+  ShieldCheck,
+  User as UserIcon,
+  Zap,
 } from "lucide-react";
 
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{
-    total_characters: number;
-    used_characters: number;
-    plan_name: string | null;
-  } | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [approvalNotice, setApprovalNotice] = useState(false);
-  const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("notice") === "approval") {
@@ -37,48 +53,59 @@ function DashboardContent() {
   }, [router, searchParams]);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      // 1. Check if user is logged in
-      const { data: { user } } = await supabase.auth.getUser();
+    let unsubProfile: (() => void) | null = null;
+    let unsubNotifs: (() => void) | null = null;
 
-      // Agar user login nahi hai to seedha login page par bhej do
-      if (!user) {
+    const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
+      }
+      if (unsubNotifs) {
+        unsubNotifs();
+        unsubNotifs = null;
+      }
+
+      if (!currentUser) {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
         router.push("/login");
         return;
       }
 
-      setUser(user);
+      setUser(currentUser);
+      try {
+        const prof = await ensureUserProfile(currentUser);
+        setProfile(prof);
+        await syncUserLifecycleNotifications(prof);
 
-      // 2. Fetch profile data from Supabase
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+        unsubProfile = subscribeUserProfile(currentUser, (updated) => {
+          setProfile(updated);
+          syncUserLifecycleNotifications(updated);
+        });
 
-      if (!error) {
-        setProfile(data);
-        setIsApproved(
-          data?.is_admin === true ||
-          user.user_metadata?.account_status === "approved" ||
-          user.email === "workaura0@gmail.com" ||
-          user.email === "workaur0@gmail.com"
-        );
-      } else if (user.user_metadata?.account_status === "approved" || user.email === "workaura0@gmail.com" || user.email === "workaur0@gmail.com") {
-        setIsApproved(true);
+        unsubNotifs = subscribeUserNotifications(currentUser.uid, (items) => {
+          setNotifications(items);
+        });
+      } catch (err) {
+        console.error("Failed to load dashboard profile:", err);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
-    };
+    });
 
-    fetchUserData();
+    return () => {
+      unsubAuth();
+      if (unsubProfile) unsubProfile();
+      if (unsubNotifs) unsubNotifs();
+    };
   }, [router]);
 
-  // Working Logout Function
   const handleLogout = async () => {
     try {
       setLoggingOut(true);
-      await supabase.auth.signOut();
+      await logOut();
       router.push("/login");
     } catch (error) {
       console.error("Error logging out:", error);
@@ -88,190 +115,317 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm">Checking authentication & loading dashboard...</span>
+          <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs">Loading account & package metrics...</span>
         </div>
       </div>
     );
   }
 
-  if (!isApproved) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
-        <div className="max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center">
-          <h1 className="text-xl font-bold text-amber-200">Waiting for Admin Approval</h1>
-          <p className="mt-2 text-sm text-amber-100/80">Your account is pending approval. Dashboard access will be available after approval.</p>
-        </div>
-      </div>
-    );
-  }
+  const planDef = getPlanDefinition(profile?.plan);
+  const pkgStatus = computePackageStatus(profile);
+  const totalCharacters = profile?.characterLimit || planDef.characterLimit;
+  const usedCharacters = profile?.usedCharacters || 0;
+  const expiryDateStr = profile?.planExpiresAt
+    ? new Date(profile.planExpiresAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "30 days";
 
-  const totalCharacters = Math.max(10000, profile?.total_characters || 0);
-  const usedCharacters = profile?.used_characters || 0;
-  const remainingCharacters = Math.max(0, totalCharacters - usedCharacters);
-
-  const usagePercentage = Math.min(100, Math.round((usedCharacters / totalCharacters) * 100));
+  const unreadNotifs = notifications.filter((n) => !n.isRead);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white relative flex flex-col justify-between overflow-hidden p-4 md:p-8 font-sans">
-      
-      {/* Background Glowing Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/15 rounded-full blur-[140px] pointer-events-none" />
-
-      <div className="max-w-6xl mx-auto w-full relative z-10 space-y-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-6">
         {approvalNotice && (
-          <div role="status" className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
-            Your account is ready. Please wait for admin approval before using premium features.
+          <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-200 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            Your account is verified and ready to use.
           </div>
         )}
-        
-        {/* Top Bar / Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-          <div>
-            <h1 className="text-3xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight flex items-center gap-2">
-              <Sparkles className="w-7 h-7 text-pink-400" /> Dashboard Overview
+
+        {/* Expired / Exhausted Warning Banner */}
+        {(pkgStatus.isExpired || pkgStatus.isQuotaExhausted || pkgStatus.isExpiringSoon || pkgStatus.isQuotaLow) && !profile?.isAdmin && (
+          <div
+            className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+              pkgStatus.isExpired || pkgStatus.isQuotaExhausted
+                ? "border-rose-500/50 bg-rose-950/30 text-rose-100"
+                : "border-amber-500/40 bg-amber-950/20 text-amber-100"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                className={`w-5 h-5 shrink-0 mt-0.5 ${
+                  pkgStatus.isExpired || pkgStatus.isQuotaExhausted
+                    ? "text-rose-400"
+                    : "text-amber-400"
+                }`}
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold">
+                  {pkgStatus.isExpired
+                    ? `${planDef.name} Package Expired`
+                    : pkgStatus.isQuotaExhausted
+                    ? "Monthly Character Quota Exhausted"
+                    : pkgStatus.isExpiringSoon
+                    ? `Package Expiring in ${pkgStatus.daysRemaining} Day${pkgStatus.daysRemaining === 1 ? "" : "s"}`
+                    : `Low Character Balance (${pkgStatus.usagePercent}% Used)`}
+                </p>
+                <p className="text-xs opacity-80">
+                  {pkgStatus.blockReason ||
+                    `You have ${pkgStatus.remainingCharacters.toLocaleString()} characters remaining until ${expiryDateStr}.`}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href={`/checkout?plan=${profile?.plan === "free" ? "pro" : profile?.plan || "pro"}`}
+              className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold whitespace-nowrap self-start sm:self-auto"
+            >
+              Renew / Upgrade Package
+            </Link>
+          </div>
+        )}
+
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+              Account & Package Dashboard
             </h1>
-            <p className="text-slate-400 text-sm mt-1">Manage your Echo AI voice generation account and limits.</p>
+            <p className="text-xs text-slate-400">
+              Monitor your subscription tier, remaining character quota, and expiry notifications.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/studio/tts")}
-              className="px-4 py-2.5 rounded-xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 hover:scale-[1.02] active:scale-[0.98] text-white text-xs flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all"
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/studio/tts"
+              className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
-              <Plus className="w-4 h-4" /> Create Voice
-            </button>
-
-            <button
-              onClick={() => router.push("/checkout?plan=pro")}
-              className="px-4 py-2.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all"
+              <Plus className="w-4 h-4" /> Open Studio
+            </Link>
+            <Link
+              href="/library"
+              className="px-4 py-2 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
             >
-              <CreditCard className="w-4 h-4" /> Upgrade Plan
-            </button>
-
-            {/* Logout Button */}
+              <Music className="w-3.5 h-3.5" /> Library
+            </Link>
+            <Link
+              href="/checkout?plan=pro"
+              className="px-4 py-2 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-amber-400" /> Packages
+            </Link>
+            {profile?.isAdmin && (
+              <Link
+                href="/admin/payment"
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" /> Admin
+              </Link>
+            )}
             <button
+              type="button"
               onClick={handleLogout}
               disabled={loggingOut}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-rose-500/10 hover:border-rose-500/40 text-slate-300 hover:text-rose-400 border border-white/10 transition-all flex items-center gap-2"
+              className="px-3.5 py-2 rounded-lg border border-slate-800 bg-slate-900 hover:border-rose-500/40 hover:text-rose-300 text-slate-400 text-xs font-medium flex items-center gap-1.5 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
-              {loggingOut ? "Logging out..." : "Logout"}
+              <LogOut className="w-3.5 h-3.5" />
+              {loggingOut ? "Signing out..." : "Sign Out"}
             </button>
           </div>
         </div>
 
-        {/* Profile Card Section */}
-        <div className="bg-slate-900/50 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        {/* Account Identity Bar */}
+        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            {user?.user_metadata?.avatar_url ? (
-              <img 
-                src={user.user_metadata.avatar_url} 
-                alt="Profile" 
-                className="w-16 h-16 rounded-2xl object-cover ring-2 ring-purple-500/40 shadow-lg"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center shadow-lg">
-                <UserIcon className="w-8 h-8 text-white" />
-              </div>
-            )}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-slate-100">
-                  {user?.user_metadata?.full_name || "User Account"}
+            <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-lg shrink-0">
+              {profile?.displayName?.[0]?.toUpperCase() || <UserIcon className="w-6 h-6" />}
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <h2 className="font-bold text-white">
+                  {user?.displayName || profile?.displayName || "Creator"}
                 </h2>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold">
-                  Active
+                <span className="text-slate-500">·</span>
+                <span
+                  className={`text-xs font-semibold ${
+                    pkgStatus.isExpired || profile?.isApproved === false
+                      ? "text-rose-400"
+                      : "text-emerald-400"
+                  }`}
+                >
+                  {profile?.isAdmin
+                    ? "Administrator"
+                    : pkgStatus.isExpired
+                    ? "Package Expired"
+                    : "Active Account"}
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-mono">{user?.email}</p>
             </div>
           </div>
 
-          {/* Quick Subscription Badge */}
-          <div className="bg-slate-950/60 p-3.5 px-5 rounded-2xl border border-white/5 flex items-center gap-3 self-stretch md:self-auto">
-            <CreditCard className="w-5 h-5 text-purple-400" />
+          <div className="flex items-center gap-6 text-xs">
             <div>
-              <p className="text-[10px] text-slate-400 uppercase font-semibold">Plan Status</p>
-              <p className="text-xs font-bold text-slate-200">{profile?.plan_name || "Free Tier"}</p>
+              <p className="text-slate-400">Current Package</p>
+              <p className="font-bold text-white mt-0.5">{planDef.name}</p>
+            </div>
+            <div className="border-l border-slate-800 pl-6">
+              <p className="text-slate-400">Valid Until</p>
+              <p className="font-mono tabular-nums font-semibold text-white mt-0.5">
+                {profile?.isAdmin ? "Unlimited" : expiryDateStr}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Package & Limits Grid */}
+        {/* Metric Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          
-          {/* Active Plan Card */}
-          <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl space-y-3 relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Current Plan</span>
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                <CreditCard className="w-5 h-5" />
-              </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Remaining Characters</span>
+              <Zap className="w-4 h-4 text-emerald-400" />
             </div>
-            <p className="text-3xl font-black text-purple-400">
-              {profile?.plan_name || "No Active Plan"}
+            <p className="text-3xl font-extrabold text-white font-mono tabular-nums">
+              {pkgStatus.remainingCharacters.toLocaleString()}
             </p>
-            <p className="text-xs text-slate-500">Upgrade anytime to increase generation limits.</p>
-          </div>
-
-          {/* Remaining Characters Card */}
-          <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl space-y-3 relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Remaining Characters</span>
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <Zap className="w-5 h-5" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-emerald-400">
-              {remainingCharacters.toLocaleString()}
-            </p>
-            <p className="text-xs text-slate-500">
-              Out of {totalCharacters.toLocaleString()} total monthly allocation.
+            <p className="text-xs text-slate-400">
+              of {totalCharacters.toLocaleString()} monthly limit
             </p>
           </div>
 
-          {/* Used Characters Card */}
-          <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl space-y-3 relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Used Characters</span>
-              <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                <Activity className="w-5 h-5" />
-              </div>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Characters Used</span>
+              <Activity className="w-4 h-4 text-sky-400" />
             </div>
-            <p className="text-3xl font-black text-slate-200">
+            <p className="text-3xl font-extrabold text-white font-mono tabular-nums">
               {usedCharacters.toLocaleString()}
             </p>
-            <p className="text-xs text-slate-500">Characters processed during this billing period.</p>
+            <p className="text-xs text-slate-400">
+              {pkgStatus.usagePercent}% of current cycle consumed
+            </p>
           </div>
 
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Package Validity</span>
+              <Calendar className="w-4 h-4 text-violet-400" />
+            </div>
+            <p className="text-3xl font-extrabold text-white font-mono tabular-nums">
+              {profile?.isAdmin ? "∞" : `${pkgStatus.daysRemaining}d`}
+            </p>
+            <p className="text-xs text-slate-400">
+              {profile?.isAdmin
+                ? "Full platform access"
+                : pkgStatus.isExpired
+                ? "Expired — renewal required"
+                : `Expires on ${expiryDateStr}`}
+            </p>
+          </div>
         </div>
 
-        {/* Visual Progress Bar Section */}
-        <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl space-y-3">
-          <div className="flex items-center justify-between text-xs font-semibold">
-            <span className="text-slate-300">Monthly Usage Progress</span>
-            <span className="text-purple-400 font-mono">{usagePercentage}% Used</span>
+        {/* Quota Progress Bar */}
+        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-200">Monthly Character Quota</span>
+            <span className="font-mono tabular-nums text-violet-400 font-semibold">
+              {pkgStatus.usagePercent}% Used
+            </span>
           </div>
-          <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-white/5">
-            <div 
-              className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 rounded-full transition-all duration-500"
-              style={{ width: `${usagePercentage}%` }}
+          <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+            <div
+              className={`h-full transition-all duration-300 ${
+                pkgStatus.usagePercent >= 90
+                  ? "bg-rose-500"
+                  : pkgStatus.usagePercent >= 75
+                  ? "bg-amber-500"
+                  : "bg-violet-500"
+              }`}
+              style={{ width: `${pkgStatus.usagePercent}%` }}
             />
           </div>
         </div>
 
-      </div>
+        {/* Bottom 2-Column Split: Package Entitlements + Notifications Center */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5 rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white">
+                Included in {planDef.name}
+              </h3>
+              <Link
+                href="/checkout"
+                className="text-xs text-violet-400 hover:text-violet-300 font-medium"
+              >
+                Change Plan
+              </Link>
+            </div>
+            <ul className="space-y-2.5">
+              {planDef.features.map((feat, idx) => (
+                <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span>{feat}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-      {/* Creator Credit Footer */}
-      <footer className="pt-8 pb-2 text-center z-10">
-        <p className="text-xs text-slate-500 flex items-center justify-center gap-1 font-medium tracking-wide">
-          made with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline" /> by <span className="text-slate-300 font-bold">ABM</span>
-        </p>
-      </footer>
+          <div className="lg:col-span-7 rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Bell className="w-4 h-4 text-violet-400" />
+                Notifications & Expiry Alerts ({unreadNotifs.length} Unread)
+              </h3>
+              {unreadNotifs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => markAllNotificationsRead(notifications)}
+                  className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" /> Mark all read
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+              {notifications.length === 0 ? (
+                <p className="text-xs text-slate-400 py-6 text-center">
+                  No notifications yet. Quota warnings, package expiry alerts, and payment confirmations appear here.
+                </p>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => !n.isRead && markNotificationRead(n.id)}
+                    className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                      n.isRead
+                        ? "border-slate-800/70 bg-slate-950/40 text-slate-400"
+                        : "border-violet-500/40 bg-slate-800/50 text-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-semibold text-white">
+                        {n.title}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500">
+                        {new Date(n.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs leading-relaxed">{n.message}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -280,7 +434,7 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 text-xs">
           Loading dashboard...
         </div>
       }
