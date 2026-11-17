@@ -354,6 +354,34 @@
         }
       },
       "required": ["id", "name", "pricePkrAmount", "characterLimit", "validityDays"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Admin-managed live support contact details including WhatsApp Support number and email",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Configuration document ID"
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "description": "WhatsApp Support phone number"
+        },
+        "supportEmail": {
+          "type": "string",
+          "description": "Official support email address"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Software house / developer brand name"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last admin update"
+        }
+      },
+      "required": ["id", "whatsappNumber", "supportEmail", "updatedAt"]
     }
   },
   "firestore": {
@@ -384,6 +412,10 @@
     "/pricing_plans/{planId}": {
       "schema": "PricingPlan",
       "description": "Admin-managed live subscription packages synced to Home, Checkout, and Studio"
+    },
+    "/site_settings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Admin-managed live support contact settings (WhatsApp number, support email)"
     }
   }
 }

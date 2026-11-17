@@ -160,5 +160,22 @@ service cloud.firestore {
       allow create, update: if isValidId(planId) && isAdmin() && isValidPricingPlan(incoming());
       allow delete: if isValidId(planId) && isAdmin();
     }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll(['id', 'whatsappNumber', 'supportEmail', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'whatsappNumber', 'supportEmail', 'companyName', 'updatedAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
+        data.whatsappNumber is string && data.whatsappNumber.size() >= 7 && data.whatsappNumber.size() <= 40 &&
+        data.supportEmail is string && data.supportEmail.size() >= 3 && data.supportEmail.size() <= 120 &&
+        (!('companyName' in data) || (data.companyName is string && data.companyName.size() <= 80)) &&
+        data.updatedAt is string && data.updatedAt.size() <= 64;
+    }
+
+    // Live Site Support Settings (Public Get for Floating WhatsApp / Footer / Contact, Admin-Only Write)
+    match /site_settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow create, update: if isValidId(settingId) && isAdmin() && isValidSiteSettings(incoming());
+      allow delete: if isValidId(settingId) && isAdmin();
+    }
   }
 }

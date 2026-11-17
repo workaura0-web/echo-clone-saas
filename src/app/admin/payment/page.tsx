@@ -8,8 +8,15 @@ import {
   createNotification,
   resetDefaultPricingPlans,
   savePricingPlan,
+  saveSupportSettings,
   subscribePricingPlans,
+  subscribeSupportSettings,
 } from "@/lib/firebase/db";
+import {
+  DEFAULT_SUPPORT_SETTINGS,
+  formatWhatsAppUrl,
+  SupportSettings,
+} from "@/lib/support";
 import {
   computePackageStatus,
   EDITABLE_PLAN_IDS,
@@ -33,6 +40,7 @@ import {
   Check,
   Clock,
   CreditCard,
+  MessageCircle,
   RefreshCw,
   RotateCcw,
   Save,
@@ -68,7 +76,7 @@ interface AdminUserRow {
   isApproved: boolean;
 }
 
-type AdminTab = "pricing" | "users" | "payments";
+type AdminTab = "pricing" | "users" | "payments" | "support";
 
 export default function AdminStudioPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("pricing");
@@ -78,6 +86,10 @@ export default function AdminStudioPage() {
   const [draftPlans, setDraftPlans] = useState<Record<PlanId, PlanDefinition>>(PLANS);
   const [savingPlanId, setSavingPlanId] = useState<string | null>(null);
   const [savingAll, setSavingAll] = useState(false);
+
+  const [supportDraft, setSupportDraft] = useState<SupportSettings>(DEFAULT_SUPPORT_SETTINGS);
+  const [savingSupport, setSavingSupport] = useState(false);
+  const supportDirtyRef = useRef(false);
 
   const dirtyPlanIdsRef = useRef<Set<PlanId>>(new Set());
 
@@ -99,6 +111,12 @@ export default function AdminStudioPage() {
       });
     });
 
+    const unsubSupport = subscribeSupportSettings((nextSupport) => {
+      if (!supportDirtyRef.current) {
+        setSupportDraft(nextSupport);
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setIsAdmin(false);
@@ -118,6 +136,7 @@ export default function AdminStudioPage() {
 
     return () => {
       unsubPlans();
+      unsubSupport();
       unsubscribe();
     };
   }, []);
@@ -269,6 +288,34 @@ export default function AdminStudioPage() {
       });
     } finally {
       setSavingAll(false);
+    }
+  };
+
+  const handleSaveSupportSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (supportDraft.whatsappNumber.trim().length < 7) {
+      setNotice({
+        type: "error",
+        text: "Please enter a valid WhatsApp Support number with country code (e.g. +1 (401) 572-1696).",
+      });
+      return;
+    }
+    try {
+      setSavingSupport(true);
+      setNotice(null);
+      await saveSupportSettings(supportDraft);
+      supportDirtyRef.current = false;
+      setNotice({
+        type: "success",
+        text: `Support settings saved! Floating WhatsApp (${supportDraft.whatsappNumber}), Footer, and Contact pages are now synced live.`,
+      });
+    } catch (err) {
+      setNotice({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to save support settings.",
+      });
+    } finally {
+      setSavingSupport(false);
     }
   };
 
@@ -483,6 +530,17 @@ export default function AdminStudioPage() {
               }`}
             >
               <CreditCard className="w-3.5 h-3.5" /> Payment Queue ({pendingPaymentsCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("support")}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+                activeTab === "support"
+                  ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp & Support
             </button>
           </div>
 
@@ -959,6 +1017,107 @@ export default function AdminStudioPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB 4: LIVE WHATSAPP & SUPPORT SETTINGS */}
+        {activeTab === "support" && (
+          <form
+            onSubmit={handleSaveSupportSettings}
+            className="max-w-2xl rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/25 via-[#0d1226] to-[#0a0e1d] p-6 md:p-8 space-y-6"
+          >
+            <div className="space-y-1 border-b border-slate-800 pb-4">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
+                Live WhatsApp Support & Contact Controls
+              </h2>
+              <p className="text-xs text-slate-400">
+                Changes saved here immediately update the floating WhatsApp icon across all pages, the site footer, and the Contact & About pages.
+              </p>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="text-slate-300 font-medium block">
+                  WhatsApp Support Number (with country code)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={supportDraft.whatsappNumber}
+                  onChange={(e) => {
+                    supportDirtyRef.current = true;
+                    setSupportDraft((prev) => ({
+                      ...prev,
+                      whatsappNumber: e.target.value,
+                    }));
+                  }}
+                  placeholder="+1 (401) 572-1696"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-emerald-400"
+                />
+                <p className="text-[11px] text-emerald-400 font-mono break-all">
+                  Live WhatsApp Link: {formatWhatsAppUrl(supportDraft.whatsappNumber)}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-slate-300 font-medium block">
+                  Official Support Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={supportDraft.supportEmail}
+                  onChange={(e) => {
+                    supportDirtyRef.current = true;
+                    setSupportDraft((prev) => ({
+                      ...prev,
+                      supportEmail: e.target.value,
+                    }));
+                  }}
+                  placeholder="codeabm71@gmail.com"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-slate-300 font-medium block">
+                  Software House / Developer Brand
+                </label>
+                <input
+                  type="text"
+                  value={supportDraft.companyName}
+                  onChange={(e) => {
+                    supportDirtyRef.current = true;
+                    setSupportDraft((prev) => ({
+                      ...prev,
+                      companyName: e.target.value,
+                    }));
+                  }}
+                  placeholder="ABM CodeSpace"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+              <a
+                href={formatWhatsAppUrl(supportDraft.whatsappNumber)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-emerald-300 hover:text-emerald-200 underline underline-offset-4"
+              >
+                Test WhatsApp Link
+              </a>
+              <button
+                type="submit"
+                disabled={savingSupport}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {savingSupport ? "Saving..." : "Save & Sync Support"}
+              </button>
+            </div>
+          </form>
         )}
       </div>
     </div>

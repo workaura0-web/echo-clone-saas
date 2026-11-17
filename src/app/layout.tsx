@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
+import SiteFooter from "@/components/site-footer";
+import FloatingWhatsApp from "@/components/floating-whatsapp";
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
@@ -37,6 +39,8 @@ export const metadata: Metadata = {
   description: DEFAULT_DESCRIPTION,
   keywords: [
     "Echo Clone",
+    "ABM CodeSpace",
+    "Echo Clone ABM CodeSpace",
     "AI Text to Speech",
     "Multi-Emotion TTS",
     "Story Narration AI Voice",
@@ -44,9 +48,9 @@ export const metadata: Metadata = {
     "Expressive Voiceover Generator",
     "AI Voice Studio",
   ],
-  authors: [{ name: "ABM", url: SITE_URL }],
-  creator: "Echo Clone Studio",
-  publisher: "Echo Clone",
+  authors: [{ name: "ABM CodeSpace", url: SITE_URL }],
+  creator: "ABM CodeSpace",
+  publisher: "ABM CodeSpace",
   applicationName: SITE_NAME,
   alternates: {
     canonical: SITE_URL,
@@ -119,6 +123,18 @@ const structuredGraph = {
         width: 512,
         height: 512,
       },
+      email: "codeabm71@gmail.com",
+      telephone: "+1-401-572-1696",
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#abm-codespace`,
+      name: "ABM CodeSpace",
+      url: SITE_URL,
+      description:
+        "ABM CodeSpace is the software house and engineering team behind Echo Clone Studio.",
+      email: "codeabm71@gmail.com",
+      telephone: "+1-401-572-1696",
     },
     {
       "@type": "WebApplication",
@@ -130,6 +146,8 @@ const structuredGraph = {
       browserRequirements: "Requires JavaScript",
       description: DEFAULT_DESCRIPTION,
       image: `${SITE_URL}/og-banner.jpg`,
+      author: { "@id": `${SITE_URL}/#abm-codespace` },
+      creator: { "@id": `${SITE_URL}/#abm-codespace` },
       publisher: { "@id": `${SITE_URL}/#organization` },
       featureList: [
         "140+ regional locales and 300+ distinct Male & Female neural voices with Auto-Detect",
@@ -192,6 +210,8 @@ export default function RootLayout({
         />
         <Navbar />
         <main className="flex-1">{children}</main>
+        <SiteFooter />
+        <FloatingWhatsApp />
       </body>
     </html>
   );

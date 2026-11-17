@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   getPlanDefinition,
   PLANS,
@@ -1058,46 +1057,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-
-      <footer className="border-t border-indigo-500/20 py-8 bg-[#060915]/90">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <div className="flex items-center gap-3">
-            <span className="p-[1.5px] rounded-lg bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400">
-              <Image
-                src="/echo-icon-192.png"
-                alt="Echo Clone Logo"
-                width={24}
-                height={24}
-                referrerPolicy="no-referrer"
-                className="w-6 h-6 rounded-[6px] object-cover block bg-slate-950"
-              />
-            </span>
-            <span>© 2026 Echo Clone Studio. Built by ABM.</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-6">
-            <Link href="/studio/tts" className="hover:text-cyan-300 transition-colors">
-              Studio
-            </Link>
-            <Link href="/library" className="hover:text-violet-300 transition-colors">
-              Library
-            </Link>
-            <Link href="/checkout" className="hover:text-fuchsia-300 transition-colors">
-              Packages
-            </Link>
-            <Link href="/dashboard" className="hover:text-amber-300 transition-colors">
-              Dashboard
-            </Link>
-            <a
-              href="https://wa.me/923000000000"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
-            >
-              WhatsApp Support
-            </a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

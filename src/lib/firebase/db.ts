@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   updateDoc,
@@ -23,6 +24,7 @@ import {
   PlanId,
 } from "../plans";
 import { handleFirestoreError, OperationType } from "./errors";
+import { DEFAULT_SUPPORT_SETTINGS, SupportSettings } from "../support";
 
 export interface AppNotification {
   id: string;
@@ -463,5 +465,86 @@ export async function adminApplyUserPlan(
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `profiles/${userId}`);
+  }
+}
+
+export async function getSupportSettings(): Promise<SupportSettings> {
+  try {
+    const snap = await getDoc(doc(db, "site_settings", "support"));
+    if (!snap.exists()) return DEFAULT_SUPPORT_SETTINGS;
+    const data = snap.data();
+    return {
+      id: "support",
+      whatsappNumber:
+        typeof data.whatsappNumber === "string" && data.whatsappNumber.trim()
+          ? data.whatsappNumber.trim()
+          : DEFAULT_SUPPORT_SETTINGS.whatsappNumber,
+      supportEmail:
+        typeof data.supportEmail === "string" && data.supportEmail.trim()
+          ? data.supportEmail.trim()
+          : DEFAULT_SUPPORT_SETTINGS.supportEmail,
+      companyName:
+        typeof data.companyName === "string" && data.companyName.trim()
+          ? data.companyName.trim()
+          : DEFAULT_SUPPORT_SETTINGS.companyName,
+      updatedAt: data.updatedAt,
+    };
+  } catch {
+    return DEFAULT_SUPPORT_SETTINGS;
+  }
+}
+
+export function subscribeSupportSettings(
+  onUpdate: (settings: SupportSettings) => void
+): () => void {
+  return onSnapshot(
+    doc(db, "site_settings", "support"),
+    (snap) => {
+      if (!snap.exists()) {
+        onUpdate(DEFAULT_SUPPORT_SETTINGS);
+        return;
+      }
+      const data = snap.data();
+      onUpdate({
+        id: "support",
+        whatsappNumber:
+          typeof data.whatsappNumber === "string" && data.whatsappNumber.trim()
+            ? data.whatsappNumber.trim()
+            : DEFAULT_SUPPORT_SETTINGS.whatsappNumber,
+        supportEmail:
+          typeof data.supportEmail === "string" && data.supportEmail.trim()
+            ? data.supportEmail.trim()
+            : DEFAULT_SUPPORT_SETTINGS.supportEmail,
+        companyName:
+          typeof data.companyName === "string" && data.companyName.trim()
+            ? data.companyName.trim()
+            : DEFAULT_SUPPORT_SETTINGS.companyName,
+        updatedAt: data.updatedAt,
+      });
+    },
+    () => {
+      onUpdate(DEFAULT_SUPPORT_SETTINGS);
+    }
+  );
+}
+
+export async function saveSupportSettings(settings: {
+  whatsappNumber: string;
+  supportEmail: string;
+  companyName?: string;
+}): Promise<void> {
+  const path = "site_settings/support";
+  const payload = {
+    id: "support",
+    whatsappNumber: settings.whatsappNumber.trim().slice(0, 40),
+    supportEmail: settings.supportEmail.trim().slice(0, 120),
+    companyName: (settings.companyName || DEFAULT_SUPPORT_SETTINGS.companyName).trim().slice(0, 80),
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    await setDoc(doc(db, "site_settings", "support"), payload);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
