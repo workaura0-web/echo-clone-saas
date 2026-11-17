@@ -10,7 +10,7 @@ export const DEFAULT_TITLE =
   "Echo Clone – Expressive AI Voice & Multi-Emotion TTS Studio";
 
 export const DEFAULT_DESCRIPTION =
-  "Turn scripts into lifelike US, UK, Australian & Urdu voices with Echo Clone. Automatic story emotions, WAV export, and synced creator packages.";
+  "Turn scripts into lifelike voices across 140+ languages with Echo Clone. Auto-Detect language, automatic story emotions, MP3 export, and PKR creator packages.";
 
 export function buildPageMetadata({
   title,

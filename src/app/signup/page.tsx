@@ -45,26 +45,33 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen text-white flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
       {/* Background Glow */}
       <div className="absolute top-[-12%] left-[-10%] w-[420px] h-[420px] bg-purple-600/20 rounded-full blur-[130px] pointer-events-none" />
       <div className="absolute bottom-[-15%] right-[-10%] w-[420px] h-[420px] bg-cyan-600/15 rounded-full blur-[130px] pointer-events-none" />
 
       {/* Main Container */}
-      <div className="w-full max-w-md bg-slate-900/70 border border-white/10 rounded-3xl p-8 shadow-2xl shadow-purple-500/10 backdrop-blur-xl space-y-6">
+      <div className="w-full max-w-md bg-[#0d1226]/85 border border-indigo-500/30 rounded-3xl p-8 shadow-2xl shadow-violet-950/40 backdrop-blur-xl space-y-6">
         
         {/* Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2.5 font-bold text-xl text-white mb-2">
-            <Image
-              src="/echo-icon-192.png"
-              alt="Echo Clone Logo"
-              width={36}
-              height={36}
-              referrerPolicy="no-referrer"
-              className="w-9 h-9 rounded-xl border border-violet-500/40 object-cover shadow-md shadow-violet-500/20"
-            />
-            <span className="text-slate-100">Echo Clone</span>
+            <span className="p-[1.5px] rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 shadow-md shadow-violet-500/25">
+              <Image
+                src="/echo-icon-192.png"
+                alt="Echo Clone Logo"
+                width={36}
+                height={36}
+                referrerPolicy="no-referrer"
+                className="w-9 h-9 rounded-[10px] object-cover block bg-slate-950"
+              />
+            </span>
+            <span>
+              <span className="text-white">Echo</span>{" "}
+              <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
+                Clone
+              </span>
+            </span>
           </Link>
           <h1 className="text-2xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
             Create an Account

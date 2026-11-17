@@ -203,23 +203,23 @@ export default function LibraryPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+    <div className="min-h-screen text-slate-100 p-4 md:p-8">
       <audio ref={audioRef} className="hidden" />
 
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-500/20 pb-6">
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
               Audio Library & History
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-300">
               Replay, inspect sentence emotions, and download your generated voice clips.
             </p>
           </div>
           <Link
             href="/studio/tts"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors self-start sm:self-auto whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-600 hover:brightness-110 text-white text-xs font-semibold shadow-md shadow-violet-600/20 transition-all self-start sm:self-auto whitespace-nowrap"
           >
             <Plus className="w-4 h-4" /> New Generation
           </Link>
@@ -307,7 +307,7 @@ export default function LibraryPage() {
               return (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4 flex flex-col justify-between"
+                  className="rounded-2xl border border-indigo-500/25 bg-gradient-to-br from-[#131936]/90 via-[#0d1226] to-[#0a0e1d] p-5 space-y-4 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-indigo-950/20"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
@@ -315,18 +315,18 @@ export default function LibraryPage() {
                         <h3 className="text-sm font-bold text-white truncate">
                           {item.title}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
                           <span className="flex items-center gap-1">
-                            <Mic className="w-3 h-3 text-violet-400" />
+                            <Mic className="w-3 h-3 text-fuchsia-400" />
                             {item.voiceName}
                           </span>
-                          <span>·</span>
+                          <span className="text-slate-500">·</span>
                           <span className="flex items-center gap-1">
-                            <Globe2 className="w-3 h-3 text-sky-400" />
+                            <Globe2 className="w-3 h-3 text-cyan-400" />
                             {item.accentLabel}
                           </span>
-                          <span>·</span>
-                          <span className="flex items-center gap-1 font-mono tabular-nums">
+                          <span className="text-slate-500">·</span>
+                          <span className="flex items-center gap-1 font-mono tabular-nums text-emerald-300">
                             <Clock className="w-3 h-3 text-emerald-400" />
                             {item.durationSeconds}s
                           </span>
@@ -343,12 +343,12 @@ export default function LibraryPage() {
                       </button>
                     </div>
 
-                    <p className="text-xs text-slate-300 bg-slate-950/60 p-3 rounded-lg border border-slate-800/80 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-slate-200 bg-slate-950/75 p-3 rounded-xl border border-indigo-500/20 line-clamp-2 leading-relaxed">
                       &ldquo;{item.text}&rdquo;
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                      <span>{item.toneLabel}</span>
+                      <span className="text-violet-300 font-medium">{item.toneLabel}</span>
                       {uniqueEmotions.length > 0 && (
                         <>
                           <span>·</span>
@@ -363,11 +363,11 @@ export default function LibraryPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                  <div className="flex items-center justify-between pt-3 border-t border-indigo-500/20">
                     <button
                       type="button"
                       onClick={() => handleTogglePlay(item)}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 hover:brightness-110 text-white text-xs font-semibold transition-all"
                     >
                       {isPlaying ? (
                         <>
@@ -384,9 +384,9 @@ export default function LibraryPage() {
                       type="button"
                       onClick={() => handleDownload(item)}
                       disabled={downloadingId === item.id}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-500/35 bg-emerald-950/40 hover:bg-emerald-900/50 text-xs font-semibold text-emerald-200 transition-colors"
                     >
-                      <Download className="w-3.5 h-3.5 text-sky-400" />
+                      <Download className="w-3.5 h-3.5 text-emerald-400" />
                       {downloadingId === item.id ? "Preparing MP3..." : "Download MP3"}
                     </button>
                   </div>

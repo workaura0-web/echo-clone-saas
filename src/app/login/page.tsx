@@ -66,7 +66,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white relative flex flex-col items-center justify-between p-4 md:p-8 overflow-hidden font-sans">
+    <div className="min-h-screen text-white relative flex flex-col items-center justify-between p-4 md:p-8 overflow-hidden font-sans">
       
       {/* Background Glowing Blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[140px] pointer-events-none" />
@@ -74,7 +74,7 @@ export default function LoginPage() {
 
       {/* Top Spacer / Header Brand */}
       <div className="pt-4 z-10">
-        <Link href="/" className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-white/10 text-xs text-slate-200 backdrop-blur-md hover:border-violet-500/50 transition-colors">
+        <Link href="/" className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-indigo-500/30 text-xs text-slate-200 backdrop-blur-md hover:border-cyan-400/60 transition-colors">
           <Image
             src="/echo-icon-192.png"
             alt="Echo Clone Logo"
@@ -88,18 +88,20 @@ export default function LoginPage() {
       </div>
 
       {/* Login Card */}
-      <div className="w-full max-w-md my-auto relative z-10 space-y-6 bg-slate-900/50 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-2xl shadow-purple-500/5">
+      <div className="w-full max-w-md my-auto relative z-10 space-y-6 bg-[#0d1226]/85 backdrop-blur-xl p-8 rounded-3xl border border-indigo-500/30 shadow-2xl shadow-violet-950/40">
         
         {/* Title */}
         <div className="text-center space-y-2">
-          <Image
-            src="/echo-icon-192.png"
-            alt="Echo Clone Emblem"
-            width={48}
-            height={48}
-            referrerPolicy="no-referrer"
-            className="w-12 h-12 rounded-2xl mx-auto border border-violet-500/40 shadow-lg shadow-violet-500/20 object-cover"
-          />
+          <div className="w-14 h-14 rounded-2xl mx-auto p-[2px] bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 shadow-lg shadow-violet-500/25">
+            <Image
+              src="/echo-icon-192.png"
+              alt="Echo Clone Emblem"
+              width={52}
+              height={52}
+              referrerPolicy="no-referrer"
+              className="w-full h-full rounded-[14px] object-cover bg-slate-950"
+            />
+          </div>
           <h1 className="text-3xl font-black bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
             Welcome Back
           </h1>

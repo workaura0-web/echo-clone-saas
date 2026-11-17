@@ -132,31 +132,45 @@ const structuredGraph = {
       image: `${SITE_URL}/og-banner.jpg`,
       publisher: { "@id": `${SITE_URL}/#organization` },
       featureList: [
-        "US, UK, Australian, Canadian, South Asian & Urdu Bilingual accents",
+        "140+ regional locales and 300+ distinct Male & Female neural voices with Auto-Detect",
         "Automatic sentence-by-sentence Story Emotion Director (Angry, Laughing, Humorous, Sad, Whispering, Excited)",
-        "Studio WAV audio export and synced Audio Library",
-        "Tiered creator packages with real-time quota and expiry alerts",
+        "Reference audio voice profile studio with Chrome MP3 export and synced Audio Library",
+        "Live Admin-managed PKR packages (Starter, Creator, Pro, Business) with real-time quota alerts",
       ],
       offers: [
         {
           "@type": "Offer",
           name: "Starter Free",
           price: "0",
-          priceCurrency: "USD",
+          priceCurrency: "PKR",
           availability: "https://schema.org/InStock",
         },
         {
           "@type": "Offer",
-          name: "Creator Pro",
-          price: "9",
-          priceCurrency: "USD",
+          name: "Starter",
+          price: "2000",
+          priceCurrency: "PKR",
           availability: "https://schema.org/InStock",
         },
         {
           "@type": "Offer",
-          name: "Studio Enterprise",
-          price: "24",
-          priceCurrency: "USD",
+          name: "Creator",
+          price: "5000",
+          priceCurrency: "PKR",
+          availability: "https://schema.org/InStock",
+        },
+        {
+          "@type": "Offer",
+          name: "Pro",
+          price: "7000",
+          priceCurrency: "PKR",
+          availability: "https://schema.org/InStock",
+        },
+        {
+          "@type": "Offer",
+          name: "Business",
+          price: "10000",
+          priceCurrency: "PKR",
           availability: "https://schema.org/InStock",
         },
       ],
@@ -171,7 +185,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark ${plusJakarta.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-violet-500/30 selection:text-white">
+      <body className="font-sans echo-studio-canvas text-slate-100 min-h-screen flex flex-col antialiased selection:bg-fuchsia-500/30 selection:text-white">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredGraph) }}

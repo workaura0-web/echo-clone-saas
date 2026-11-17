@@ -11,7 +11,17 @@ import {
 } from "firebase/firestore";
 import { db } from "./config";
 import { UserProfile } from "./auth";
-import { computePackageStatus, getPlanDefinition, PlanId } from "../plans";
+import {
+  buildMergedPlansMap,
+  computePackageStatus,
+  EDITABLE_PLAN_IDS,
+  estimateHoursLabel,
+  formatPkrLabel,
+  getPlanDefinition,
+  PLANS,
+  PlanDefinition,
+  PlanId,
+} from "../plans";
 import { handleFirestoreError, OperationType } from "./errors";
 
 export interface AppNotification {
@@ -262,17 +272,101 @@ export async function deleteGenerationRecord(generationId: string): Promise<void
   }
 }
 
+export async function getLivePricingPlansMap(): Promise<Record<PlanId, PlanDefinition>> {
+  try {
+    const snap = await getDocs(collection(db, "pricing_plans"));
+    const overrides: Partial<PlanDefinition>[] = [];
+    snap.forEach((d) => {
+      overrides.push(d.data() as Partial<PlanDefinition>);
+    });
+    return buildMergedPlansMap(overrides);
+  } catch (err) {
+    console.warn("Using default plans fallback:", err);
+    return buildMergedPlansMap([]);
+  }
+}
+
+export function subscribePricingPlans(
+  onUpdate: (plansMap: Record<PlanId, PlanDefinition>) => void
+): () => void {
+  return onSnapshot(
+    collection(db, "pricing_plans"),
+    (snap) => {
+      const overrides: Partial<PlanDefinition>[] = [];
+      snap.forEach((d) => {
+        overrides.push(d.data() as Partial<PlanDefinition>);
+      });
+      onUpdate(buildMergedPlansMap(overrides));
+    },
+    (error) => {
+      console.warn("Pricing plans listener fallback:", error);
+      onUpdate(buildMergedPlansMap([]));
+    }
+  );
+}
+
+export async function savePricingPlan(plan: PlanDefinition): Promise<void> {
+  const path = `pricing_plans/${plan.id}`;
+  const cleanPricePkr = Math.max(0, Math.round(Number(plan.pricePkrAmount) || 0));
+  const cleanPriceUsd = Math.max(0, Math.round(Number(plan.priceUsd) || 0));
+  const cleanCredits = Math.max(0, Math.round(Number(plan.characterLimit) || 0));
+  const cleanMaxGen = Math.max(500, Math.round(Number(plan.maxCharsPerGeneration) || 50000));
+  const cleanDays = Math.max(1, Math.min(3650, Math.round(Number(plan.validityDays) || 30)));
+  const cleanFeatures = (Array.isArray(plan.features) ? plan.features : [])
+    .map((f) => String(f).trim())
+    .filter(Boolean)
+    .slice(0, 15);
+
+  const payload = {
+    id: plan.id,
+    name: String(plan.name || PLANS[plan.id].name).trim().slice(0, 80),
+    tagline: String(plan.tagline || "").trim().slice(0, 240),
+    priceUsd: cleanPriceUsd,
+    priceDisplayUsd: `$${cleanPriceUsd}`,
+    pricePkrAmount: cleanPricePkr,
+    pricePkr: formatPkrLabel(cleanPricePkr, cleanDays),
+    characterLimit: cleanCredits,
+    maxCharsPerGeneration: cleanMaxGen,
+    validityDays: cleanDays,
+    approxHoursLabel: String(plan.approxHoursLabel || estimateHoursLabel(cleanCredits)).trim().slice(0, 60),
+    libraryLimit: typeof plan.libraryLimit === "number" ? plan.libraryLimit : -1,
+    allowedAccents: ["all"],
+    storyEmotionEnabled: Boolean(plan.storyEmotionEnabled),
+    hdWavExport: Boolean(plan.hdWavExport),
+    commercialRights: Boolean(plan.commercialRights),
+    isPopular: Boolean(plan.isPopular),
+    isVisible: plan.isVisible !== false,
+    sortOrder: Number(plan.sortOrder ?? 1),
+    features: cleanFeatures.length > 0 ? cleanFeatures : PLANS[plan.id].features,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    await setDoc(doc(db, "pricing_plans", plan.id), payload);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function resetDefaultPricingPlans(): Promise<void> {
+  await Promise.all(
+    EDITABLE_PLAN_IDS.map((id) => savePricingPlan({ ...PLANS[id] }))
+  );
+}
+
 export async function activateFreeStarterPlan(userId: string): Promise<void> {
-  const plan = getPlanDefinition("free");
+  const livePlans = await getLivePricingPlansMap();
+  const plan = getPlanDefinition("free", livePlans);
+  const cappedLimit = Math.min(10000, plan.characterLimit || 10000);
   const now = new Date();
   const expiry = new Date();
   expiry.setDate(now.getDate() + plan.validityDays);
 
   try {
     await updateDoc(doc(db, "profiles", userId), {
-      plan: plan.id,
+      plan: "free",
       planName: plan.name,
-      characterLimit: plan.characterLimit,
+      characterLimit: cappedLimit,
       usedCharacters: 0,
       maxCharsPerGeneration: plan.maxCharsPerGeneration,
       planStartedAt: now.toISOString(),
@@ -280,8 +374,8 @@ export async function activateFreeStarterPlan(userId: string): Promise<void> {
       updatedAt: now.toISOString(),
     });
     await createNotification(userId, {
-      title: "Starter Free Plan Activated",
-      message: `Your ${plan.name} package is active for 30 days with ${plan.characterLimit.toLocaleString()} characters.`,
+      title: `${plan.name} Activated`,
+      message: `Your ${plan.name} package is active for ${plan.validityDays} days with ${cappedLimit.toLocaleString()} credits.`,
       type: "success",
       actionHref: "/studio/tts",
     });
@@ -295,8 +389,10 @@ export async function submitPaymentRequest(params: {
   userEmail: string;
   planId: PlanId;
   transactionId: string;
+  livePlansMap?: Record<PlanId, PlanDefinition>;
 }): Promise<string> {
-  const plan = getPlanDefinition(params.planId);
+  const liveMap = params.livePlansMap || (await getLivePricingPlansMap());
+  const plan = getPlanDefinition(params.planId, liveMap);
   const id = makeDocId("pay");
 
   try {
@@ -315,7 +411,7 @@ export async function submitPaymentRequest(params: {
 
     await createNotification(params.userId, {
       title: `Payment Submitted (${plan.name})`,
-      message: `Reference ${params.transactionId.trim()} received. Your ${plan.name} package will activate immediately once verified.`,
+      message: `Reference ${params.transactionId.trim()} received (${plan.pricePkr}). Your ${plan.name} package (${plan.characterLimit.toLocaleString()} credits) will activate immediately once verified.`,
       type: "info",
       actionHref: "/dashboard",
     });
@@ -329,12 +425,18 @@ export async function submitPaymentRequest(params: {
 export async function adminApplyUserPlan(
   userId: string,
   planId: PlanId,
-  options: { resetUsage?: boolean; validityDays?: number } = {}
+  options: {
+    resetUsage?: boolean;
+    validityDays?: number;
+    livePlansMap?: Record<PlanId, PlanDefinition>;
+  } = {}
 ): Promise<void> {
-  const plan = getPlanDefinition(planId);
+  const liveMap = options.livePlansMap || (await getLivePricingPlansMap());
+  const plan = getPlanDefinition(planId, liveMap);
+  const days = options.validityDays ?? plan.validityDays;
   const now = new Date();
   const expiry = new Date();
-  expiry.setDate(now.getDate() + (options.validityDays ?? plan.validityDays));
+  expiry.setDate(now.getDate() + days);
 
   const payload: Record<string, unknown> = {
     plan: plan.id,
@@ -355,7 +457,7 @@ export async function adminApplyUserPlan(
     await updateDoc(doc(db, "profiles", userId), payload);
     await createNotification(userId, {
       title: `${plan.name} Package Activated`,
-      message: `Your account has been upgraded to ${plan.name} (${plan.characterLimit.toLocaleString()} characters / ${options.validityDays ?? plan.validityDays} days).`,
+      message: `Your account has been upgraded to ${plan.name} (${plan.characterLimit.toLocaleString()} credits / ${days} days).`,
       type: "success",
       actionHref: "/studio/tts",
     });

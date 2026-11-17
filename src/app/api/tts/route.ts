@@ -5,12 +5,14 @@ import { Mp3Encoder } from "@breezystack/lamejs";
 import {
   COUNTRY_ACCENTS,
   DELIVERY_TONES,
+  detectLanguageLocale,
   EMOTION_PROFILES,
   EmotionType,
   VOICES,
   VoicePersona,
 } from "@/lib/audio/accentsAndVoices";
 import { analyzeScriptEmotionsLocally, AnalyzedSegment } from "@/lib/audio/speechSynth";
+import { getCachedGlobalVoices, GlobalNeuralVoice } from "@/lib/audio/globalVoices";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,7 +43,7 @@ function formatSignedPercent(delta: number, min = -35, max = 40): string {
   return clamped >= 0 ? `+${clamped}%` : `${clamped}%`;
 }
 
-function splitLongTextForEdge(text: string, maxLen = 450): string[] {
+function splitLongTextForEdge(text: string, maxLen = 420): string[] {
   const clean = text.trim();
   if (!clean) return [];
   if (clean.length <= maxLen) return [clean];
@@ -76,44 +78,158 @@ function splitLongTextForEdge(text: string, maxLen = 450): string[] {
   return parts;
 }
 
-async function synthesizeWithEdgeNeuralMp3(
-  segments: AnalyzedSegment[],
+function resolveNeuralVoiceForLocale(
+  locale: string,
   voice: VoicePersona,
-  accentId: string,
-  toneId: string,
-  speed: number,
-  pitch: number,
-  isPreview: boolean
-): Promise<string | null> {
-  const defaultEdgeVoice =
-    voice.edgeVoicesByAccent[accentId] ||
-    voice.edgeVoicesByAccent["en-US"] ||
-    (voice.gender === "Male" ? "en-US-GuyNeural" : "en-US-JennyNeural");
+  globalVoices: GlobalNeuralVoice[],
+  customEdgeVoice?: string
+): string {
+  if (customEdgeVoice && /^[a-z]{2,3}-[A-Z]{2,4}-[\w-]+Neural$/i.test(customEdgeVoice)) {
+    return customEdgeVoice;
+  }
+
+  if (voice.edgeVoicesByAccent[locale]) {
+    return voice.edgeVoicesByAccent[locale];
+  }
+
+  const normalizedLocale = locale === "en-PK" ? "en-IN" : locale;
+  const exactGenderMatch = globalVoices.find(
+    (v) => v.locale.toLowerCase() === normalizedLocale.toLowerCase() && v.gender === voice.gender
+  );
+  if (exactGenderMatch) return exactGenderMatch.shortName;
+
+  const exactLocaleAny = globalVoices.find(
+    (v) => v.locale.toLowerCase() === normalizedLocale.toLowerCase()
+  );
+  if (exactLocaleAny) return exactLocaleAny.shortName;
+
+  const langPrefix = normalizedLocale.split("-")[0]?.toLowerCase() || "en";
+  const prefixGenderMatch = globalVoices.find(
+    (v) => v.locale.toLowerCase().startsWith(`${langPrefix}-`) && v.gender === voice.gender
+  );
+  if (prefixGenderMatch) return prefixGenderMatch.shortName;
+
+  const prefixAny = globalVoices.find((v) =>
+    v.locale.toLowerCase().startsWith(`${langPrefix}-`)
+  );
+  if (prefixAny) return prefixAny.shortName;
+
+  return voice.edgeVoicesByAccent["en-US"] || (voice.gender === "Male" ? "en-US-GuyNeural" : "en-US-JennyNeural");
+}
+
+async function synthesizeChunkWithRetry(
+  tts: MsEdgeTTS,
+  escapedText: string,
+  prosody: { rate?: string; pitch?: string }
+): Promise<Buffer> {
+  try {
+    const { audioStream } = tts.toStream(escapedText, prosody);
+    const parts: Buffer[] = [];
+    for await (const chunk of audioStream) {
+      parts.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(parts);
+  } catch (err) {
+    // Retry once with clean default prosody if a specific locale rejects rate/pitch percentages
+    if (prosody.rate || prosody.pitch) {
+      const { audioStream } = tts.toStream(escapedText, {});
+      const parts: Buffer[] = [];
+      for await (const chunk of audioStream) {
+        parts.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      return Buffer.concat(parts);
+    }
+    throw err;
+  }
+}
+
+async function synthesizeWithEdgeNeuralMp3(params: {
+  segments: AnalyzedSegment[];
+  voice: VoicePersona;
+  resolvedLocale: string;
+  toneId: string;
+  speed: number;
+  pitch: number;
+  isPreview: boolean;
+  customEdgeVoice?: string;
+  qualitySteps?: number;
+  removeSilences?: boolean;
+  seed?: number;
+}): Promise<{ audioUrl: string; usedVoice: string } | null> {
+  const {
+    segments,
+    voice,
+    resolvedLocale,
+    toneId,
+    speed,
+    pitch,
+    isPreview,
+    customEdgeVoice,
+    qualitySteps = 32,
+    removeSilences = false,
+    seed,
+  } = params;
+
+  let globalVoices: GlobalNeuralVoice[] = [];
+  if (!customEdgeVoice && !voice.edgeVoicesByAccent[resolvedLocale]) {
+    globalVoices = await getCachedGlobalVoices().catch(() => []);
+  }
+
+  const defaultEdgeVoice = resolveNeuralVoiceForLocale(
+    resolvedLocale,
+    voice,
+    globalVoices,
+    customEdgeVoice
+  );
+
+  const outputFormat =
+    qualitySteps <= 16
+      ? OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3
+      : OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3;
 
   const speedPctBase = (Number(speed || 1) - 1) * 100;
   const pitchPctBase = (Number(pitch || 1) - 1) * 55;
+
+  // Deterministic seed micro-variation (+/- 2%) when seed is provided
+  const seedPitchJitter =
+    typeof seed === "number" && Number.isFinite(seed) ? ((seed % 5) - 2) : 0;
 
   const toneRateOffset =
     toneId === "speech" ? -6 : toneId === "dramatic" ? -8 : toneId === "podcast" ? 3 : 0;
   const tonePitchOffset =
     toneId === "dramatic" ? -5 : toneId === "speech" ? -2 : toneId === "podcast" ? 2 : 0;
 
+  const silenceTightenRate = removeSilences ? 3 : 0;
+
   const mp3Buffers: Buffer[] = [];
   let activeVoice = "";
+  let firstUsedVoice = defaultEdgeVoice;
   let tts: MsEdgeTTS | null = null;
 
   try {
     for (const seg of segments) {
-      const hasUrduScript = URDU_ARABIC_REGEX.test(seg.text);
-      const segmentVoice = hasUrduScript ? voice.urduScriptVoice : defaultEdgeVoice;
+      const cleanSegText = removeSilences
+        ? seg.text.replace(/\s+/g, " ").replace(/\.{2,}/g, ".").trim()
+        : seg.text.trim();
+
+      if (!cleanSegText) continue;
+
+      const hasUrduArabicScript = URDU_ARABIC_REGEX.test(cleanSegText);
+      const isUrduLocale = resolvedLocale.startsWith("ur");
+
+      let segmentVoice = defaultEdgeVoice;
+      if (!customEdgeVoice && hasUrduArabicScript && (isUrduLocale || resolvedLocale === "en-PK" || resolvedLocale === "en-US")) {
+        segmentVoice = voice.urduScriptVoice;
+      }
 
       if (!tts || activeVoice !== segmentVoice) {
         if (tts) {
           tts.close();
         }
-        tts = new MsEdgeTTS({ connectionTimeoutMs: 12000, synthesisTimeoutMs: 25000 });
-        await tts.setMetadata(segmentVoice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+        tts = new MsEdgeTTS({ connectionTimeoutMs: 12000, synthesisTimeoutMs: 30000 });
+        await tts.setMetadata(segmentVoice, outputFormat);
         activeVoice = segmentVoice;
+        if (mp3Buffers.length === 0) firstUsedVoice = segmentVoice;
       }
 
       const emo = EMOTION_PROFILES[seg.emotion] || EMOTION_PROFILES.calm;
@@ -122,21 +238,20 @@ async function synthesizeWithEdgeNeuralMp3(
       const emoPitch = isStoryOrDrama ? emo.edgePitchDelta : 0;
 
       const isUrduVoice = segmentVoice.startsWith("ur-");
-      const rateStr = formatSignedPercent(speedPctBase + toneRateOffset + emoRate);
-      const pitchStr = formatSignedPercent(pitchPctBase + tonePitchOffset + emoPitch);
+      const rateStr = formatSignedPercent(
+        speedPctBase + toneRateOffset + emoRate + silenceTightenRate
+      );
+      const pitchStr = formatSignedPercent(
+        pitchPctBase + tonePitchOffset + emoPitch + seedPitchJitter
+      );
 
-      const chunksOfText = splitLongTextForEdge(seg.text, 420);
+      const chunksOfText = splitLongTextForEdge(cleanSegText, 420);
       for (const piece of chunksOfText) {
         const escaped = escapeXmlForSsml(piece);
         const prosody = isUrduVoice ? {} : { rate: rateStr, pitch: pitchStr };
-
-        const { audioStream } = tts.toStream(escaped, prosody);
-        const rawParts: Buffer[] = [];
-        for await (const chunk of audioStream) {
-          rawParts.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-        }
-        if (rawParts.length > 0) {
-          mp3Buffers.push(Buffer.concat(rawParts));
+        const buf = await synthesizeChunkWithRetry(tts, escaped, prosody);
+        if (buf.length > 0) {
+          mp3Buffers.push(buf);
         }
       }
     }
@@ -145,7 +260,10 @@ async function synthesizeWithEdgeNeuralMp3(
     const mergedMp3 = Buffer.concat(mp3Buffers);
     if (mergedMp3.length < 256) return null;
 
-    return `data:audio/mpeg;base64,${mergedMp3.toString("base64")}`;
+    return {
+      audioUrl: `data:audio/mpeg;base64,${mergedMp3.toString("base64")}`,
+      usedVoice: firstUsedVoice,
+    };
   } catch (err) {
     console.warn("Edge Neural TTS error:", err);
     return null;
@@ -161,7 +279,6 @@ function wavBase64ToMp3DataUrl(wavBase64: string): string | null {
     const wavBuf = Buffer.from(wavBase64, "base64");
     if (wavBuf.length <= 44) return null;
 
-    // Gemini unary WAV output is 24kHz mono 16-bit signed PCM with 44-byte RIFF header
     const sampleRate = wavBuf.readUInt32LE(24) || 24000;
     const channels = wavBuf.readUInt16LE(22) || 1;
     const pcmDataOffset = 44;
@@ -229,6 +346,10 @@ export async function POST(req: NextRequest) {
       speed = 1,
       pitch = 1,
       customSegments,
+      customEdgeVoice,
+      qualitySteps = 32,
+      removeSilences = false,
+      seed,
       isPreview = false,
     } = body as {
       text?: string;
@@ -238,6 +359,10 @@ export async function POST(req: NextRequest) {
       speed?: number;
       pitch?: number;
       customSegments?: AnalyzedSegment[];
+      customEdgeVoice?: string;
+      qualitySteps?: number;
+      removeSilences?: boolean;
+      seed?: number;
       isPreview?: boolean;
     };
 
@@ -245,16 +370,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Text script is required." }, { status: 400 });
     }
 
-    if (text.length > 20000) {
+    if (text.length > 50000) {
       return NextResponse.json(
-        { error: "Script must be 20,000 characters or fewer." },
+        { error: "Single request chunk must be 50,000 characters or fewer." },
         { status: 400 }
       );
     }
 
     const voice = VOICES.find((v) => v.id === voiceId) || VOICES[0];
-    const accent = COUNTRY_ACCENTS.find((a) => a.id === accentId) || COUNTRY_ACCENTS[0];
     const tone = DELIVERY_TONES.find((t) => t.id === toneId) || DELIVERY_TONES[0];
+
+    let resolvedLocale = accentId || "en-US";
+    let detectedLabel = COUNTRY_ACCENTS.find((a) => a.id === resolvedLocale)?.label || resolvedLocale;
+
+    if (resolvedLocale === "auto") {
+      const detected = detectLanguageLocale(text);
+      resolvedLocale = detected.locale;
+      detectedLabel = `Auto · ${detected.label}`;
+    }
 
     const wordCount = text.trim().split(/\s+/).length;
     const durationSeconds = Math.max(2, Math.ceil(wordCount / (2.4 * (Number(speed) || 1))));
@@ -265,7 +398,6 @@ export async function POST(req: NextRequest) {
         ? customSegments
         : analyzeScriptEmotionsLocally(text, tone.id);
 
-    // Optional AI Emotion Analysis when GEMINI_API_KEY is available in server environment
     if (
       apiKey &&
       !isPreview &&
@@ -316,32 +448,36 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Primary Zero-Key Human Neural Voice Engine (Distinct Male & Female Voices per Country Accent -> Real 96kbps MP3)
-    const neuralMp3Url = await synthesizeWithEdgeNeuralMp3(
+    const neuralResult = await synthesizeWithEdgeNeuralMp3({
       segments,
       voice,
-      accent.id,
-      tone.id,
-      Number(speed) || 1,
-      Number(pitch) || 1,
-      Boolean(isPreview)
-    );
+      resolvedLocale,
+      toneId: tone.id,
+      speed: Number(speed) || 1,
+      pitch: Number(pitch) || 1,
+      isPreview: Boolean(isPreview),
+      customEdgeVoice,
+      qualitySteps: Number(qualitySteps) || 32,
+      removeSilences: Boolean(removeSilences),
+      seed: typeof seed === "number" ? seed : undefined,
+    });
 
-    if (neuralMp3Url) {
+    if (neuralResult) {
       return NextResponse.json({
         success: true,
         engine: "neural-mp3",
-        audioUrl: neuralMp3Url,
+        audioUrl: neuralResult.audioUrl,
+        resolvedNeuralVoice: neuralResult.usedVoice,
+        detectedLocale: resolvedLocale,
+        accentLabel: detectedLabel,
         segments,
         durationSeconds,
-        voiceName: voice.name,
+        voiceName: customEdgeVoice ? customEdgeVoice.split("-").pop()?.replace(/Neural$/, "") || voice.name : voice.name,
         gender: voice.gender,
-        accentLabel: accent.label,
         toneLabel: tone.label,
       });
     }
 
-    // Secondary Neural Engine via Gemini TTS (if GEMINI_API_KEY is configured and Edge TTS failed)
     if (apiKey) {
       const ai = new GoogleGenAI({
         apiKey,
@@ -362,7 +498,8 @@ export async function POST(req: NextRequest) {
               .join(" ")
           : text;
 
-      const styleInstruction = `${voice.voiceDirection} ${accent.styleDirection} ${tone.styleDirection}`.trim();
+      const accentObj = COUNTRY_ACCENTS.find((a) => a.id === resolvedLocale);
+      const styleInstruction = `${voice.voiceDirection} ${accentObj?.styleDirection || `Speak fluently in locale ${resolvedLocale}.`} ${tone.styleDirection}`.trim();
 
       for (const model of [tone.ttsModel, "gemini-3.8-flash-lite-tts"]) {
         try {
@@ -389,11 +526,12 @@ export async function POST(req: NextRequest) {
               success: true,
               engine: mp3DataUrl ? "neural-mp3" : "gemini-tts",
               audioUrl: mp3DataUrl || `data:audio/wav;base64,${base64Wav}`,
+              detectedLocale: resolvedLocale,
+              accentLabel: detectedLabel,
               segments,
               durationSeconds,
               voiceName: voice.name,
               gender: voice.gender,
-              accentLabel: accent.label,
               toneLabel: tone.label,
             });
           }
@@ -403,15 +541,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Last-resort browser fallback only if both server neural engines are unreachable
     return NextResponse.json({
       success: true,
       engine: "web-speech-fallback",
+      detectedLocale: resolvedLocale,
+      accentLabel: detectedLabel,
       segments,
       durationSeconds,
       voiceName: voice.name,
       gender: voice.gender,
-      accentLabel: accent.label,
       toneLabel: tone.label,
     });
   } catch (error: unknown) {

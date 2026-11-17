@@ -49,7 +49,7 @@
         },
         "plan": {
           "type": "string",
-          "enum": ["free", "pro", "enterprise"],
+          "enum": ["free", "starter", "creator", "pro", "business", "enterprise"],
           "description": "Subscription tier"
         },
         "planName": {
@@ -174,7 +174,7 @@
         },
         "planId": {
           "type": "string",
-          "enum": ["free", "pro", "enterprise"],
+          "enum": ["free", "starter", "creator", "pro", "business", "enterprise"],
           "description": "Requested plan tier ID"
         },
         "planName": {
@@ -265,6 +265,95 @@
         }
       },
       "required": ["userId", "email"]
+    },
+    "PricingPlan": {
+      "title": "PricingPlan",
+      "description": "Admin-configurable subscription package and credit allocation published to Homepage & Checkout",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": ["free", "starter", "creator", "pro", "business", "enterprise"],
+          "description": "Package identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the plan"
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Short audience subtitle"
+        },
+        "priceUsd": {
+          "type": "number",
+          "description": "Price in USD"
+        },
+        "priceDisplayUsd": {
+          "type": "string",
+          "description": "Formatted USD string"
+        },
+        "pricePkrAmount": {
+          "type": "number",
+          "description": "Numeric price in PKR"
+        },
+        "pricePkr": {
+          "type": "string",
+          "description": "Formatted PKR price string"
+        },
+        "characterLimit": {
+          "type": "number",
+          "description": "Monthly credits / character limit"
+        },
+        "maxCharsPerGeneration": {
+          "type": "number",
+          "description": "Max characters allowed per generation"
+        },
+        "validityDays": {
+          "type": "number",
+          "description": "Subscription duration in days"
+        },
+        "approxHoursLabel": {
+          "type": "string",
+          "description": "Approximate monthly audio hours label"
+        },
+        "libraryLimit": {
+          "type": "number",
+          "description": "Saved clips limit (-1 for unlimited)"
+        },
+        "storyEmotionEnabled": {
+          "type": "boolean",
+          "description": "Whether dynamic multi-emotion narration is included"
+        },
+        "hdWavExport": {
+          "type": "boolean",
+          "description": "Whether studio MP3/WAV export is included"
+        },
+        "commercialRights": {
+          "type": "boolean",
+          "description": "Whether commercial usage rights are included"
+        },
+        "isPopular": {
+          "type": "boolean",
+          "description": "Highlight badge on homepage & checkout"
+        },
+        "isVisible": {
+          "type": "boolean",
+          "description": "Whether plan appears on homepage & checkout"
+        },
+        "sortOrder": {
+          "type": "number",
+          "description": "Display order"
+        },
+        "features": {
+          "type": "array",
+          "description": "List of bullet features (max 12)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last admin edit"
+        }
+      },
+      "required": ["id", "name", "pricePkrAmount", "characterLimit", "validityDays"]
     }
   },
   "firestore": {
@@ -291,6 +380,10 @@
     "/admins/{userId}": {
       "schema": "Admin",
       "description": "Collection of verified administrator user IDs"
+    },
+    "/pricing_plans/{planId}": {
+      "schema": "PricingPlan",
+      "description": "Admin-managed live subscription packages synced to Home, Checkout, and Studio"
     }
   }
 }

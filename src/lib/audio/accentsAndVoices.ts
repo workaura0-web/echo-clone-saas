@@ -48,13 +48,34 @@ export interface EmotionProfile {
   rateFactor: number;
   volumeFactor: number;
   pauseAfterMs: number;
-  edgePitchDelta: number; // percentage shift e.g. -8 -> "-8%"
-  edgeRateDelta: number; // percentage shift e.g. +12 -> "+12%"
+  edgePitchDelta: number;
+  edgeRateDelta: number;
   cueTag: string;
   colorClass: string;
 }
 
+export interface GlobalDemoLanguage {
+  id: string;
+  code: string;
+  name: string;
+  nativeName: string;
+  locale: string;
+  maleVoice: string;
+  femaleVoice: string;
+  sampleText: string;
+}
+
 export const COUNTRY_ACCENTS: CountryAccent[] = [
+  {
+    id: "auto",
+    code: "AUTO",
+    country: "Auto-Detect",
+    label: "Auto-Detect Language",
+    lang: "en-US",
+    proOnly: false,
+    styleDirection:
+      "Automatically identify the language and script from the input text and deliver natural studio speech.",
+  },
   {
     id: "en-US",
     code: "US",
@@ -81,7 +102,7 @@ export const COUNTRY_ACCENTS: CountryAccent[] = [
     country: "Australia",
     label: "Australian English (AU)",
     lang: "en-AU",
-    proOnly: true,
+    proOnly: false,
     styleDirection:
       "Speak in a warm, authentic Australian English accent with natural Aussie intonation.",
   },
@@ -91,7 +112,7 @@ export const COUNTRY_ACCENTS: CountryAccent[] = [
     country: "Canada",
     label: "Canadian English (CA)",
     lang: "en-CA",
-    proOnly: true,
+    proOnly: false,
     styleDirection:
       "Speak in a clear, friendly Canadian English accent with natural North American clarity.",
   },
@@ -101,7 +122,7 @@ export const COUNTRY_ACCENTS: CountryAccent[] = [
     country: "South Asia",
     label: "South Asian English (PK/IN)",
     lang: "en-IN",
-    proOnly: true,
+    proOnly: false,
     styleDirection:
       "Speak in an expressive, educated Pakistani / South Asian English accent with clear articulation.",
   },
@@ -111,11 +132,277 @@ export const COUNTRY_ACCENTS: CountryAccent[] = [
     country: "Urdu / Bilingual",
     label: "Urdu & English Bilingual",
     lang: "ur-PK",
-    proOnly: true,
+    proOnly: false,
     styleDirection:
       "Speak naturally in fluent Urdu or Urdu-English bilingual phrasing with authentic South Asian warmth and expression.",
   },
 ];
+
+export const GLOBAL_DEMO_LANGUAGES: GlobalDemoLanguage[] = [
+  {
+    id: "en-US",
+    code: "US",
+    name: "English",
+    nativeName: "English",
+    locale: "en-US",
+    maleVoice: "en-US-ChristopherNeural",
+    femaleVoice: "en-US-JennyNeural",
+    sampleText:
+      "Echo Clone turns any written script into lifelike, multi-emotion studio audio ready for creators worldwide.",
+  },
+  {
+    id: "ur-PK",
+    code: "PK",
+    name: "Urdu",
+    nativeName: "اردو",
+    locale: "ur-PK",
+    maleVoice: "ur-IN-SalmanNeural",
+    femaleVoice: "ur-IN-GulNeural",
+    sampleText:
+      "ایکو کلون اسٹوڈیو کے ساتھ اپنی کہانیوں اور ویڈیوز کے لیے قدرتی اور مستند اردو آواز سیکنڈوں میں بنائیں۔",
+  },
+  {
+    id: "ar-SA",
+    code: "SA",
+    name: "Arabic",
+    nativeName: "العربية",
+    locale: "ar-SA",
+    maleVoice: "ar-SA-HamedNeural",
+    femaleVoice: "ar-SA-ZariyahNeural",
+    sampleText:
+      "استمتع بتحويل النصوص إلى أصوات بشرية طبيعية بجودة استوديو احترافية عبر منصة إيكو كلون.",
+  },
+  {
+    id: "hi-IN",
+    code: "IN",
+    name: "Hindi",
+    nativeName: "हिन्दी",
+    locale: "hi-IN",
+    maleVoice: "hi-IN-MadhurNeural",
+    femaleVoice: "hi-IN-SwaraNeural",
+    sampleText:
+      "इको क्लोन के साथ अपनी कहानियों, पॉडकास्ट और वीडियो के लिए बेहद स्वाभाविक आवाज़ कुछ ही सेकंड में तैयार करें।",
+  },
+  {
+    id: "bn-BD",
+    code: "BD",
+    name: "Bengali",
+    nativeName: "বাংলা",
+    locale: "bn-BD",
+    maleVoice: "bn-BD-PradeepNeural",
+    femaleVoice: "bn-BD-NabanitaNeural",
+    sampleText:
+      "ইকো ক্লোন স্টুডিওর মাধ্যমে আপনার গল্প এবং ভিডিওর জন্য স্বাভাবিক ও স্পষ্ট ভয়েসওভার তৈরি করুন।",
+  },
+  {
+    id: "fa-IR",
+    code: "IR",
+    name: "Persian",
+    nativeName: "فارسی",
+    locale: "fa-IR",
+    maleVoice: "fa-IR-FaridNeural",
+    femaleVoice: "fa-IR-DilaraNeural",
+    sampleText:
+      "با استودیو اکو کلون، متن خود را در چند ثانیه به صدای طبیعی و حرفه‌ای تبدیل کنید.",
+  },
+  {
+    id: "tr-TR",
+    code: "TR",
+    name: "Turkish",
+    nativeName: "Türkçe",
+    locale: "tr-TR",
+    maleVoice: "tr-TR-AhmetNeural",
+    femaleVoice: "tr-TR-EmelNeural",
+    sampleText:
+      "Echo Clone ile senaryolarınızı saniyeler içinde doğal ve stüdyo kalitesinde seslendirmelere dönüştürün.",
+  },
+  {
+    id: "fr-FR",
+    code: "FR",
+    name: "French",
+    nativeName: "Français",
+    locale: "fr-FR",
+    maleVoice: "fr-FR-HenriNeural",
+    femaleVoice: "fr-FR-DeniseNeural",
+    sampleText:
+      "Transformez n'importe quel script en une narration fluide et expressive grâce au studio vocal Echo Clone.",
+  },
+  {
+    id: "de-DE",
+    code: "DE",
+    name: "German",
+    nativeName: "Deutsch",
+    locale: "de-DE",
+    maleVoice: "de-DE-ConradNeural",
+    femaleVoice: "de-DE-KatjaNeural",
+    sampleText:
+      "Verwandeln Sie jedes Skript in Sekundenschnelle in authentische Sprachaufnahmen in Studioqualität.",
+  },
+  {
+    id: "es-ES",
+    code: "ES",
+    name: "Spanish",
+    nativeName: "Español",
+    locale: "es-ES",
+    maleVoice: "es-ES-AlvaroNeural",
+    femaleVoice: "es-ES-ElviraNeural",
+    sampleText:
+      "Convierte cualquier guion en audio natural con emociones reales y calidad profesional en segundos.",
+  },
+  {
+    id: "pt-BR",
+    code: "BR",
+    name: "Portuguese",
+    nativeName: "Português",
+    locale: "pt-BR",
+    maleVoice: "pt-BR-AntonioNeural",
+    femaleVoice: "pt-BR-FranciscaNeural",
+    sampleText:
+      "Crie narrações naturais com qualidade de estúdio para vídeos, cursos e audiobooks em segundos.",
+  },
+  {
+    id: "it-IT",
+    code: "IT",
+    name: "Italian",
+    nativeName: "Italiano",
+    locale: "it-IT",
+    maleVoice: "it-IT-DiegoNeural",
+    femaleVoice: "it-IT-ElsaNeural",
+    sampleText:
+      "Trasforma i tuoi testi in voci naturali ed espressive con qualità da studio professionale.",
+  },
+  {
+    id: "ru-RU",
+    code: "RU",
+    name: "Russian",
+    nativeName: "Русский",
+    locale: "ru-RU",
+    maleVoice: "ru-RU-DmitryNeural",
+    femaleVoice: "ru-RU-SvetlanaNeural",
+    sampleText:
+      "Превращайте любой сценарий в естественную студийную озвучку с живыми эмоциями за секунды.",
+  },
+  {
+    id: "zh-CN",
+    code: "CN",
+    name: "Chinese",
+    nativeName: "中文",
+    locale: "zh-CN",
+    maleVoice: "zh-CN-YunxiNeural",
+    femaleVoice: "zh-CN-XiaoxiaoNeural",
+    sampleText:
+      "使用 Echo Clone 语音工作室，几秒钟内将文字转化为自然富有情感的专业级配音。",
+  },
+  {
+    id: "ja-JP",
+    code: "JP",
+    name: "Japanese",
+    nativeName: "日本語",
+    locale: "ja-JP",
+    maleVoice: "ja-JP-KeitaNeural",
+    femaleVoice: "ja-JP-NanamiNeural",
+    sampleText:
+      "Echo Cloneスタジオを使えば、あらゆる台本を数秒で自然で表現力豊かな音声に変換できます。",
+  },
+  {
+    id: "ko-KR",
+    code: "KR",
+    name: "Korean",
+    nativeName: "한국어",
+    locale: "ko-KR",
+    maleVoice: "ko-KR-InJoonNeural",
+    femaleVoice: "ko-KR-SunHiNeural",
+    sampleText:
+      "에코 클론 스튜디오로 어떤 대본이든 몇 초 만에 자연스럽고 생생한 스튜디오 음성으로 제작하세요.",
+  },
+  {
+    id: "id-ID",
+    code: "ID",
+    name: "Indonesian",
+    nativeName: "Bahasa Indonesia",
+    locale: "id-ID",
+    maleVoice: "id-ID-ArdiNeural",
+    femaleVoice: "id-ID-GadisNeural",
+    sampleText:
+      "Ubah naskah apa pun menjadi audio studio yang natural dan ekspresif hanya dalam hitungan detik.",
+  },
+  {
+    id: "th-TH",
+    code: "TH",
+    name: "Thai",
+    nativeName: "ภาษาไทย",
+    locale: "th-TH",
+    maleVoice: "th-TH-NiwatNeural",
+    femaleVoice: "th-TH-PremwadeeNeural",
+    sampleText:
+      "เปลี่ยนบทพูดของคุณให้เป็นเสียงบรรยายระดับสตูดิโอที่เป็นธรรมชาติได้ภายในไม่กี่วินาที",
+  },
+];
+
+export const LANGUAGE_REGION_STATS = [
+  { region: "European & Nordic", count: "45+", examples: "English, French, German, Spanish, Italian, Portuguese, Dutch, Polish, Swedish, Turkish" },
+  { region: "South & East Asian", count: "35+", examples: "Urdu, Hindi, Bengali, Chinese, Japanese, Korean, Thai, Vietnamese, Indonesian, Tamil" },
+  { region: "Middle Eastern & Central Asian", count: "30+", examples: "Arabic (15+ dialects), Persian, Uzbek, Kazakh, Azerbaijani, Hebrew" },
+  { region: "African & Americas", count: "30+", examples: "Swahili, Zulu, Afrikaans, Amharic, Somali, US/CA/MX/BR Regional Variants" },
+];
+
+export function detectLanguageLocale(text: string): {
+  locale: string;
+  label: string;
+} {
+  const sample = text.trim();
+  if (!sample) return { locale: "en-US", label: "English (US)" };
+
+  // Script-based zero-latency detection
+  if (/[\u0600-\u06FF]/.test(sample)) {
+    // Distinguish Urdu-specific Nastaliq letters (ٹ ڈ ڑ ں ے ہ ھ گ پ چ ژ) & Persian letters (گ چ پ ژ ی ک)
+    if (/[ٹڈڑںےھ]/.test(sample) || /\b(اور|ہے|ہیں|نہیں|میں|کی|کا|کے|کو|سے)\b/.test(sample)) {
+      return { locale: "ur-PK", label: "Urdu" };
+    }
+    if (/[گچپژ]/.test(sample) && !/[ٹڈڑںےھ]/.test(sample)) {
+      return { locale: "fa-IR", label: "Persian (Farsi)" };
+    }
+    return { locale: "ar-SA", label: "Arabic" };
+  }
+  if (/[\u0900-\u097F]/.test(sample)) return { locale: "hi-IN", label: "Hindi" };
+  if (/[\u0980-\u09FF]/.test(sample)) return { locale: "bn-BD", label: "Bengali" };
+  if (/[\u0B80-\u0BFF]/.test(sample)) return { locale: "ta-IN", label: "Tamil" };
+  if (/[\u0E00-\u0E7F]/.test(sample)) return { locale: "th-TH", label: "Thai" };
+  if (/[\u3040-\u30FF]/.test(sample)) return { locale: "ja-JP", label: "Japanese" };
+  if (/[\uAC00-\uD7AF]/.test(sample)) return { locale: "ko-KR", label: "Korean" };
+  if (/[\u4E00-\u9FFF]/.test(sample)) return { locale: "zh-CN", label: "Chinese (Mandarin)" };
+  if (/[\u0400-\u04FF]/.test(sample)) return { locale: "ru-RU", label: "Russian" };
+
+  const lower = sample.toLowerCase();
+
+  // Roman Urdu detection -> routes to en-IN / South Asian English voice for natural pronunciation
+  if (
+    /\b(hai|hain|hoon|hu|nahi|kya|mera|meri|tera|aap|tum|aur|main|mein|kar|raha|rahi|karta|chahiye|accha|bahut|waqt|gusse|yaadein)\b/.test(
+      lower
+    )
+  ) {
+    return { locale: "en-PK", label: "Roman Urdu / South Asian" };
+  }
+
+  if (/[ğüşöçıİ]/.test(sample)) return { locale: "tr-TR", label: "Turkish" };
+  if (/\b(el|la|los|las|que|para|con|una|por|cómo|está)\b/.test(lower) && /[áéíóúñ¿¡]/i.test(sample)) {
+    return { locale: "es-ES", label: "Spanish" };
+  }
+  if (/\b(le|la|les|des|est|dans|pour|avec|nous|vous|c'est)\b/.test(lower) && /[éèêàçù]/i.test(sample)) {
+    return { locale: "fr-FR", label: "French" };
+  }
+  if (/\b(der|die|das|und|ist|ein|nicht|mit|auf|für)\b/.test(lower)) {
+    return { locale: "de-DE", label: "German" };
+  }
+  if (/\b(não|para|com|você|está|uma|como|obrigado)\b/.test(lower) && /[ãõçáé]/i.test(sample)) {
+    return { locale: "pt-BR", label: "Portuguese" };
+  }
+  if (/\b(yang|dan|untuk|dengan|ini|itu|adalah|dalam|tidak)\b/.test(lower)) {
+    return { locale: "id-ID", label: "Indonesian" };
+  }
+
+  return { locale: "en-US", label: "English (US)" };
+}
 
 export const DELIVERY_TONES: DeliveryTone[] = [
   {
@@ -123,7 +410,7 @@ export const DELIVERY_TONES: DeliveryTone[] = [
     label: "Story Narration (Auto Multi-Emotion)",
     description:
       "Automatically detects angry, laughing, humorous, sad & suspenseful lines sentence-by-sentence.",
-    proOnly: true,
+    proOnly: false,
     ttsModel: "gemini-3.8-flash-tts",
     styleDirection:
       "Perform as a master human storyteller and voice actor. Dynamically shift vocal emotion sentence by sentence according to the emotional cues—sounding genuinely furious on angry lines, chuckling warmly on laughing or humorous lines, tender and heartbroken on sad lines, and hushed on suspenseful lines.",
@@ -159,7 +446,7 @@ export const DELIVERY_TONES: DeliveryTone[] = [
     id: "dramatic",
     label: "Dramatic / Cinema Trailer",
     description: "Deep theatrical weight, tension, and gravitas.",
-    proOnly: true,
+    proOnly: false,
     ttsModel: "gemini-3.8-flash-tts",
     styleDirection:
       "Intense, cinematic, dramatic theatrical performance with rich emotional contrast and deliberate pacing.",
@@ -303,7 +590,7 @@ export const VOICES: VoicePersona[] = [
       "en-PK": "en-IN-PrabhatNeural",
       "ur-PK": "en-IN-PrabhatNeural",
     },
-    urduScriptVoice: "ur-PK-AsadNeural",
+    urduScriptVoice: "ur-IN-SalmanNeural",
     sample:
       "Good evening. I am Arnold, ready to deliver commanding narration and intense dramatic scenes.",
     basePitch: 0.85,
@@ -349,7 +636,7 @@ export const VOICES: VoicePersona[] = [
       "en-PK": "en-IN-PrabhatNeural",
       "ur-PK": "en-IN-PrabhatNeural",
     },
-    urduScriptVoice: "ur-PK-AsadNeural",
+    urduScriptVoice: "ur-IN-SalmanNeural",
     sample:
       "Welcome. I am Daniel, bringing composed authority to documentaries, speeches, and stories.",
     basePitch: 0.89,
@@ -395,7 +682,7 @@ export const VOICES: VoicePersona[] = [
       "en-PK": "en-IN-PrabhatNeural",
       "ur-PK": "en-IN-PrabhatNeural",
     },
-    urduScriptVoice: "ur-PK-AsadNeural",
+    urduScriptVoice: "ur-IN-SalmanNeural",
     sample:
       "What is going on everyone! I am Liam, bringing natural warmth and effortless humor.",
     basePitch: 0.92,
@@ -441,7 +728,7 @@ export const VOICES: VoicePersona[] = [
       "en-PK": "en-IN-PrabhatNeural",
       "ur-PK": "en-IN-PrabhatNeural",
     },
-    urduScriptVoice: "ur-PK-AsadNeural",
+    urduScriptVoice: "ur-IN-SalmanNeural",
     sample:
       "Hello friends! I am Hamza, crafted for soulful stories, emotional drama, and impactful speeches.",
     basePitch: 0.87,
@@ -463,7 +750,7 @@ export const SAMPLE_TEMPLATES = [
   {
     label: "Product Promo",
     toneId: "professional",
-    text: `Introducing Echo Clone Studio. Select your regional accent, choose dynamic storytelling emotions, and turn any written script into lifelike studio audio in seconds.`,
+    text: `Introducing Echo Clone Studio. Select from over 140 languages or use Auto-Detect, choose dynamic storytelling emotions, and export lifelike MP3 voiceovers in seconds.`,
   },
   {
     label: "Urdu / Bilingual Story",

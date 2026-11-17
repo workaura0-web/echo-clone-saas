@@ -4,8 +4,18 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { auth, ensureUserProfile, UserProfile } from "@/lib/firebase/auth";
-import { activateFreeStarterPlan, submitPaymentRequest } from "@/lib/firebase/db";
-import { PLANS, PlanId, getPlanDefinition } from "@/lib/plans";
+import {
+  activateFreeStarterPlan,
+  submitPaymentRequest,
+  subscribePricingPlans,
+} from "@/lib/firebase/db";
+import {
+  EDITABLE_PLAN_IDS,
+  getPlanDefinition,
+  PLANS,
+  PlanDefinition,
+  PlanId,
+} from "@/lib/plans";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   ArrowLeft,
@@ -21,10 +31,11 @@ import {
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialPlan = (searchParams.get("plan") as PlanId) || "pro";
+  const initialParam = searchParams.get("plan") as PlanId | null;
 
+  const [livePlansMap, setLivePlansMap] = useState<Record<PlanId, PlanDefinition>>(PLANS);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(
-    initialPlan === "free" || initialPlan === "enterprise" ? initialPlan : "pro"
+    initialParam && initialParam in PLANS ? initialParam : "creator"
   );
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -42,7 +53,11 @@ function CheckoutContent() {
   };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubPlans = subscribePricingPlans((mergedMap) => {
+      setLivePlansMap(mergedMap);
+    });
+
+    const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser({ id: currentUser.uid, email: currentUser.email || "" });
         const prof = await ensureUserProfile(currentUser);
@@ -53,11 +68,26 @@ function CheckoutContent() {
       }
       setLoading(false);
     });
-    return () => unsub();
+
+    return () => {
+      unsubPlans();
+      unsubAuth();
+    };
   }, []);
 
-  const plan = getPlanDefinition(selectedPlan);
-  const orderedPlans: PlanId[] = ["free", "pro", "enterprise"];
+  const plan = getPlanDefinition(selectedPlan, livePlansMap);
+  const orderedPlans = EDITABLE_PLAN_IDS.filter(
+    (id) => id === "free" || livePlansMap[id]?.isVisible !== false
+  ).sort((a, b) => (livePlansMap[a]?.sortOrder ?? 0) - (livePlansMap[b]?.sortOrder ?? 0));
+
+  const checkoutGridClass =
+    orderedPlans.length >= 5
+      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
+      : orderedPlans.length === 4
+      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+      : orderedPlans.length === 3
+      ? "grid grid-cols-1 md:grid-cols-3 gap-4"
+      : "grid grid-cols-1 md:grid-cols-2 gap-4";
 
   const copyToClipboard = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
@@ -76,13 +106,13 @@ function CheckoutContent() {
       await activateFreeStarterPlan(user.id);
       setMessage({
         type: "success",
-        text: "Starter Free package activated for 30 days (10,000 characters). Redirecting to Studio...",
+        text: `${plan.name} activated for ${plan.validityDays} days (${plan.characterLimit.toLocaleString()} credits). Redirecting to Studio...`,
       });
       setTimeout(() => router.push("/studio/tts"), 1200);
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Could not activate Starter plan.",
+        text: err instanceof Error ? err.message : "Could not activate Starter Free plan.",
       });
     } finally {
       setIsSubmitting(false);
@@ -110,10 +140,11 @@ function CheckoutContent() {
         userEmail: user.email,
         planId: selectedPlan,
         transactionId: transactionId.trim(),
+        livePlansMap,
       });
       setMessage({
         type: "success",
-        text: `Payment reference submitted for ${plan.name}. Your account will be upgraded as soon as admin verifies the transaction.`,
+        text: `Payment reference submitted for ${plan.name} (${plan.pricePkr}). Your ${plan.characterLimit.toLocaleString()} credits will unlock once verified.`,
       });
       setTransactionId("");
     } catch (err) {
@@ -127,7 +158,7 @@ function CheckoutContent() {
   };
 
   return (
-    <div className="max-w-5xl w-full space-y-8">
+    <div className="max-w-6xl w-full space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <Link
@@ -140,7 +171,7 @@ function CheckoutContent() {
             Packages & Subscription Checkout
           </h1>
           <p className="text-xs text-slate-400">
-            Select a monthly package below. Every plan syncs directly with your Echo Clone account quota.
+            Choose your monthly credit package below. Live pricing and credits sync directly with your Echo Clone account.
           </p>
         </div>
 
@@ -159,11 +190,21 @@ function CheckoutContent() {
         </div>
       </div>
 
-      {/* Interactive 3-Plan Selector Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* Interactive Live Plans Selector Grid */}
+      <div className={checkoutGridClass}>
         {orderedPlans.map((key) => {
-          const item = PLANS[key];
+          const item = livePlansMap[key];
           const isSelected = selectedPlan === item.id;
+          const tierBorder =
+            key === "free"
+              ? "from-slate-900/80 to-slate-950/90 border-slate-700/60"
+              : key === "starter"
+              ? "from-sky-950/35 to-[#0a0f20] border-sky-500/35"
+              : key === "creator"
+              ? "from-violet-950/55 via-fuchsia-950/20 to-[#0a0f20] border-fuchsia-400/50"
+              : key === "pro"
+              ? "from-emerald-950/35 to-[#0a0f20] border-emerald-500/35"
+              : "from-amber-950/30 to-[#0a0f20] border-amber-500/35";
           return (
             <button
               key={item.id}
@@ -172,30 +213,48 @@ function CheckoutContent() {
                 setSelectedPlan(item.id);
                 setMessage(null);
               }}
-              className={`rounded-xl border p-5 text-left transition-colors flex flex-col justify-between space-y-4 ${
+              className={`rounded-2xl border bg-gradient-to-b p-5 text-left transition-all flex flex-col justify-between space-y-4 ${
                 isSelected
-                  ? "border-violet-500 bg-slate-900"
-                  : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
+                  ? "border-cyan-400 ring-1 ring-cyan-400/50 from-indigo-950/75 to-[#0a0f22] shadow-lg shadow-cyan-950/30"
+                  : `${tierBorder} hover:brightness-110`
               }`}
             >
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-bold text-white">{item.name}</span>
-                  {isSelected && (
-                    <span className="text-[11px] font-semibold text-violet-400">
+                  {isSelected ? (
+                    <span className="text-[11px] font-semibold text-cyan-300">
                       Selected
                     </span>
-                  )}
+                  ) : item.isPopular ? (
+                    <span className="text-[10px] font-bold text-fuchsia-300">
+                      Popular
+                    </span>
+                  ) : null}
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-extrabold text-white font-mono tabular-nums">
-                    {item.priceDisplayUsd}
-                  </span>
-                  <span className="text-xs text-slate-400">/ {item.pricePkr}</span>
+
+                <div>
+                  <p className="text-xl font-extrabold text-white font-mono tabular-nums">
+                    PKR {item.pricePkrAmount.toLocaleString()}
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {item.priceDisplayUsd} / {item.validityDays} days
+                  </p>
                 </div>
-                <ul className="space-y-2 pt-2 border-t border-slate-800/80">
-                  {item.features.map((f, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+
+                <div className="rounded-xl border border-white/10 bg-slate-950/75 px-3 py-2">
+                  <p className="text-[11px] text-slate-400">Monthly Credits</p>
+                  <p className="text-sm font-bold text-emerald-300 font-mono tabular-nums">
+                    {item.characterLimit.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    {item.approxHoursLabel}
+                  </p>
+                </div>
+
+                <ul className="space-y-1.5 pt-1">
+                  {item.features.slice(0, 4).map((f, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
                       <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
@@ -227,7 +286,7 @@ function CheckoutContent() {
               Activate {plan.name}
             </h2>
             <p className="text-xs text-slate-400">
-              Includes 10,000 characters valid for 30 days with US & UK accents.
+              Includes {plan.characterLimit.toLocaleString()} credits valid for {plan.validityDays} days across all languages.
             </p>
           </div>
           <button
@@ -334,7 +393,9 @@ function CheckoutContent() {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   Submit Payment Reference
                 </h2>
-                <span className="text-xs text-slate-400">{plan.name}</span>
+                <span className="text-xs text-slate-400">
+                  {plan.name} · {plan.characterLimit.toLocaleString()} credits
+                </span>
               </div>
 
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -383,7 +444,7 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-10 flex justify-center">
+    <div className="min-h-screen text-slate-100 p-4 md:p-10 flex justify-center">
       <Suspense fallback={<div className="text-slate-400 text-xs">Loading packages...</div>}>
         <CheckoutContent />
       </Suspense>

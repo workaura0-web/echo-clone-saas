@@ -120,26 +120,33 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-indigo-500/20 bg-[#070a17]/85 backdrop-blur-xl shadow-lg shadow-indigo-950/25">
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between gap-8 px-6">
-        {/* Zone 1: Custom Brand Logo & Wordmark */}
+        {/* Zone 1: Gradient-Framed Brand Logo & Wordmark */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2.5 text-lg font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 hover:text-violet-300 transition-colors"
+          className="inline-flex items-center gap-2.5 text-lg font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 group"
         >
-          <Image
-            src="/echo-icon-192.png"
-            alt="Echo Clone Logo"
-            width={32}
-            height={32}
-            referrerPolicy="no-referrer"
-            className="w-8 h-8 rounded-lg border border-violet-500/40 object-cover shadow-sm shadow-violet-500/20"
-          />
-          <span>Echo Clone</span>
+          <span className="p-[1.5px] rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 shadow-md shadow-violet-500/25 group-hover:shadow-cyan-500/30 transition-shadow">
+            <Image
+              src="/echo-icon-192.png"
+              alt="Echo Clone Logo"
+              width={32}
+              height={32}
+              referrerPolicy="no-referrer"
+              className="w-8 h-8 rounded-[10px] object-cover block bg-slate-950"
+            />
+          </span>
+          <span>
+            <span className="text-white">Echo</span>{" "}
+            <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
+              Clone
+            </span>
+          </span>
         </Link>
 
         {/* Zone 2: Clean Single-Line Nav Links */}
-        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-400">
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
           {navLinks.map((link) => {
             const isActive =
               link.href === "/"
@@ -151,8 +158,8 @@ export default function Navbar() {
                 href={link.href}
                 className={`whitespace-nowrap shrink-0 transition-colors py-1 border-b-2 ${
                   isActive
-                    ? "text-white border-violet-500"
-                    : "border-transparent hover:text-slate-100"
+                    ? "text-white border-cyan-400"
+                    : "border-transparent hover:text-cyan-200 hover:border-violet-400/50"
                 }`}
               >
                 {link.name}
@@ -263,7 +270,7 @@ export default function Navbar() {
 
           <Link
             href={userId ? "/studio/tts" : "/login"}
-            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition-colors whitespace-nowrap shrink-0"
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 hover:brightness-110 text-white shadow-md shadow-violet-600/20 transition-all whitespace-nowrap shrink-0"
           >
             <span>{userId ? "Open Studio" : "Sign In"}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -272,7 +279,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-slate-400 hover:text-white p-2 rounded-lg border border-slate-800 bg-slate-900/60"
+            className="md:hidden text-slate-300 hover:text-white p-2 rounded-lg border border-indigo-500/30 bg-slate-900/70"
             aria-label="Toggle Menu"
           >
             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -282,7 +289,7 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       {isOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-950 px-6 py-4 flex flex-col gap-2">
+        <div className="md:hidden border-t border-indigo-500/20 bg-[#070a17] px-6 py-4 flex flex-col gap-2">
           {navLinks.map((link) => {
             const isActive =
               link.href === "/"
@@ -295,7 +302,7 @@ export default function Navbar() {
                 onClick={() => setIsOpen(false)}
                 className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-violet-600/20 text-white border border-violet-500/30"
+                    ? "bg-gradient-to-r from-violet-600/25 to-cyan-600/20 text-white border border-cyan-500/30"
                     : "text-slate-400 hover:text-white hover:bg-slate-900"
                 }`}
               >
@@ -306,7 +313,7 @@ export default function Navbar() {
           <Link
             href={userId ? "/studio/tts" : "/login"}
             onClick={() => setIsOpen(false)}
-            className="mt-2 w-full text-center px-4 py-2.5 text-xs font-semibold rounded-lg bg-violet-600 text-white"
+            className="mt-2 w-full text-center px-4 py-2.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 text-white"
           >
             {userId ? "Open Studio" : "Sign In"}
           </Link>

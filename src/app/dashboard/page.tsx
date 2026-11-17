@@ -14,10 +14,11 @@ import {
   AppNotification,
   markAllNotificationsRead,
   markNotificationRead,
+  subscribePricingPlans,
   subscribeUserNotifications,
   syncUserLifecycleNotifications,
 } from "@/lib/firebase/db";
-import { computePackageStatus, getPlanDefinition } from "@/lib/plans";
+import { computePackageStatus, getPlanDefinition, PLANS, PlanDefinition, PlanId } from "@/lib/plans";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
   Activity,
@@ -41,6 +42,7 @@ function DashboardContent() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [livePlansMap, setLivePlansMap] = useState<Record<PlanId, PlanDefinition>>(PLANS);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [approvalNotice, setApprovalNotice] = useState(false);
@@ -55,6 +57,9 @@ function DashboardContent() {
   useEffect(() => {
     let unsubProfile: (() => void) | null = null;
     let unsubNotifs: (() => void) | null = null;
+    const unsubPlans = subscribePricingPlans((mergedMap) => {
+      setLivePlansMap(mergedMap);
+    });
 
     const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (unsubProfile) {
@@ -96,6 +101,7 @@ function DashboardContent() {
     });
 
     return () => {
+      unsubPlans();
       unsubAuth();
       if (unsubProfile) unsubProfile();
       if (unsubNotifs) unsubNotifs();
@@ -124,7 +130,7 @@ function DashboardContent() {
     );
   }
 
-  const planDef = getPlanDefinition(profile?.plan);
+  const planDef = getPlanDefinition(profile?.plan, livePlansMap);
   const pkgStatus = computePackageStatus(profile);
   const totalCharacters = profile?.characterLimit || planDef.characterLimit;
   const usedCharacters = profile?.usedCharacters || 0;
@@ -139,7 +145,7 @@ function DashboardContent() {
   const unreadNotifs = notifications.filter((n) => !n.isRead);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+    <div className="min-h-screen text-slate-100 p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {approvalNotice && (
           <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-200 flex items-center gap-2">
@@ -242,10 +248,12 @@ function DashboardContent() {
         </div>
 
         {/* Account Identity Bar */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-[#121836]/90 via-[#0e1329]/95 to-cyan-950/35 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-indigo-950/20">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-lg shrink-0">
-              {profile?.displayName?.[0]?.toUpperCase() || <UserIcon className="w-6 h-6" />}
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 p-[1.5px] shrink-0">
+              <div className="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center text-white font-bold text-lg">
+                {profile?.displayName?.[0]?.toUpperCase() || <UserIcon className="w-6 h-6 text-cyan-300" />}
+              </div>
             </div>
             <div className="space-y-0.5">
               <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -267,16 +275,16 @@ function DashboardContent() {
                     : "Active Account"}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono">{user?.email}</p>
+              <p className="text-xs text-slate-300 font-mono">{user?.email}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-6 text-xs">
             <div>
               <p className="text-slate-400">Current Package</p>
-              <p className="font-bold text-white mt-0.5">{planDef.name}</p>
+              <p className="font-bold text-cyan-300 mt-0.5">{planDef.name}</p>
             </div>
-            <div className="border-l border-slate-800 pl-6">
+            <div className="border-l border-indigo-500/25 pl-6">
               <p className="text-slate-400">Valid Until</p>
               <p className="font-mono tabular-nums font-semibold text-white mt-0.5">
                 {profile?.isAdmin ? "Unlimited" : expiryDateStr}
@@ -287,12 +295,12 @@ function DashboardContent() {
 
         {/* Metric Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-950/40 via-[#0d1328] to-[#0a0f20] p-5 space-y-2 shadow-lg shadow-emerald-950/15">
+            <div className="flex items-center justify-between text-xs text-emerald-200/80">
               <span>Remaining Characters</span>
               <Zap className="w-4 h-4 text-emerald-400" />
             </div>
-            <p className="text-3xl font-extrabold text-white font-mono tabular-nums">
+            <p className="text-3xl font-extrabold text-emerald-300 font-mono tabular-nums">
               {pkgStatus.remainingCharacters.toLocaleString()}
             </p>
             <p className="text-xs text-slate-400">
@@ -300,12 +308,12 @@ function DashboardContent() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="rounded-2xl border border-sky-500/35 bg-gradient-to-br from-sky-950/40 via-[#0d1328] to-[#0a0f20] p-5 space-y-2 shadow-lg shadow-sky-950/15">
+            <div className="flex items-center justify-between text-xs text-sky-200/80">
               <span>Characters Used</span>
               <Activity className="w-4 h-4 text-sky-400" />
             </div>
-            <p className="text-3xl font-extrabold text-white font-mono tabular-nums">
+            <p className="text-3xl font-extrabold text-sky-300 font-mono tabular-nums">
               {usedCharacters.toLocaleString()}
             </p>
             <p className="text-xs text-slate-400">
@@ -313,12 +321,12 @@ function DashboardContent() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="rounded-2xl border border-violet-500/35 bg-gradient-to-br from-violet-950/45 via-[#0d1328] to-[#0a0f20] p-5 space-y-2 shadow-lg shadow-violet-950/15">
+            <div className="flex items-center justify-between text-xs text-violet-200/80">
               <span>Package Validity</span>
-              <Calendar className="w-4 h-4 text-violet-400" />
+              <Calendar className="w-4 h-4 text-fuchsia-400" />
             </div>
-            <p className="text-3xl font-extrabold text-white font-mono tabular-nums">
+            <p className="text-3xl font-extrabold text-fuchsia-300 font-mono tabular-nums">
               {profile?.isAdmin ? "∞" : `${pkgStatus.daysRemaining}d`}
             </p>
             <p className="text-xs text-slate-400">
@@ -332,21 +340,21 @@ function DashboardContent() {
         </div>
 
         {/* Quota Progress Bar */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+        <div className="rounded-2xl border border-indigo-500/30 bg-[#0d1226]/90 p-5 space-y-3">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-slate-200">Monthly Character Quota</span>
-            <span className="font-mono tabular-nums text-violet-400 font-semibold">
+            <span className="font-mono tabular-nums text-cyan-300 font-semibold">
               {pkgStatus.usagePercent}% Used
             </span>
           </div>
-          <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+          <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-indigo-500/25">
             <div
               className={`h-full transition-all duration-300 ${
                 pkgStatus.usagePercent >= 90
-                  ? "bg-rose-500"
+                  ? "bg-gradient-to-r from-rose-500 to-orange-500"
                   : pkgStatus.usagePercent >= 75
-                  ? "bg-amber-500"
-                  : "bg-violet-500"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-400"
+                  : "bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-500"
               }`}
               style={{ width: `${pkgStatus.usagePercent}%` }}
             />
@@ -355,21 +363,21 @@ function DashboardContent() {
 
         {/* Bottom 2-Column Split: Package Entitlements + Notifications Center */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="lg:col-span-5 rounded-2xl border border-emerald-500/25 bg-gradient-to-b from-emerald-950/20 via-[#0d1226] to-[#0a0e1d] p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
               <h3 className="text-sm font-bold text-white">
                 Included in {planDef.name}
               </h3>
               <Link
                 href="/checkout"
-                className="text-xs text-violet-400 hover:text-violet-300 font-medium"
+                className="text-xs text-emerald-300 hover:text-emerald-200 font-semibold"
               >
                 Change Plan
               </Link>
             </div>
             <ul className="space-y-2.5">
               {planDef.features.map((feat, idx) => (
-                <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
+                <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-200">
                   <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>{feat}</span>
                 </li>
@@ -377,10 +385,10 @@ function DashboardContent() {
             </ul>
           </div>
 
-          <div className="lg:col-span-7 rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="lg:col-span-7 rounded-2xl border border-violet-500/25 bg-gradient-to-b from-violet-950/25 via-[#0d1226] to-[#0a0e1d] p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-violet-500/20 pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Bell className="w-4 h-4 text-violet-400" />
+                <Bell className="w-4 h-4 text-fuchsia-400" />
                 Notifications & Expiry Alerts ({unreadNotifs.length} Unread)
               </h3>
               {unreadNotifs.length > 0 && (

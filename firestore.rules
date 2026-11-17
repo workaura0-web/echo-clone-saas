@@ -83,6 +83,20 @@ service cloud.firestore {
       allow delete: if isValidId(userId) && isAdmin();
     }
 
+    function isValidPricingPlan(data) {
+      return data.keys().hasAll(['id', 'name', 'pricePkrAmount', 'characterLimit', 'validityDays']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 32 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 80 &&
+        data.pricePkrAmount is number && data.pricePkrAmount >= 0 && data.pricePkrAmount <= 10000000 &&
+        data.characterLimit is number && data.characterLimit >= 0 && data.characterLimit <= 100000000 &&
+        data.validityDays is number && data.validityDays >= 1 && data.validityDays <= 3650 &&
+        (!('tagline' in data) || (data.tagline is string && data.tagline.size() <= 240)) &&
+        (!('pricePkr' in data) || (data.pricePkr is string && data.pricePkr.size() <= 60)) &&
+        (!('priceDisplayUsd' in data) || (data.priceDisplayUsd is string && data.priceDisplayUsd.size() <= 32)) &&
+        (!('approxHoursLabel' in data) || (data.approxHoursLabel is string && data.approxHoursLabel.size() <= 60)) &&
+        (!('features' in data) || (data.features is list && data.features.size() <= 15));
+    }
+
     // Generations Collection (TTS History)
     match /generations/{generationId} {
       allow get: if isValidId(generationId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
@@ -90,8 +104,8 @@ service cloud.firestore {
       allow create: if isValidId(generationId) && isSignedIn() &&
         incoming().keys().hasAll(['userId', 'text', 'voiceId', 'characterCount']) &&
         incoming().userId == request.auth.uid &&
-        incoming().text is string && incoming().text.size() <= 20000 &&
-        incoming().voiceId is string && incoming().voiceId.size() <= 64 &&
+        incoming().text is string && incoming().text.size() <= 50000 &&
+        incoming().voiceId is string && incoming().voiceId.size() <= 128 &&
         incoming().characterCount is number && incoming().characterCount >= 0;
       allow update: if isValidId(generationId) && isSignedIn() &&
         (existing().userId == request.auth.uid || isAdmin()) &&
@@ -137,6 +151,14 @@ service cloud.firestore {
       allow get: if isValidId(userId) && isSignedIn() && (isOwner(userId) || isAdmin());
       allow list: if isAdmin();
       allow write: if isValidId(userId) && isAdmin();
+    }
+
+    // Dynamic Pricing Plans (Public Read for Homepage & Checkout, Admin-Only Write)
+    match /pricing_plans/{planId} {
+      allow get: if isValidId(planId);
+      allow list: if true;
+      allow create, update: if isValidId(planId) && isAdmin() && isValidPricingPlan(incoming());
+      allow delete: if isValidId(planId) && isAdmin();
     }
   }
 }
