@@ -18,6 +18,14 @@
           "type": "string",
           "description": "User public display name"
         },
+        "username": {
+          "type": "string",
+          "description": "Unique lowercase account handle for username sign-in"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Official OAuth or profile avatar image URL"
+        },
         "role": {
           "type": "string",
           "enum": ["user", "admin"],
@@ -26,6 +34,14 @@
         "createdAt": {
           "type": "string",
           "description": "ISO timestamp of creation"
+        },
+        "acceptedTerms": {
+          "type": "boolean",
+          "description": "Whether the user accepted Terms & Conditions and Privacy Policy at registration"
+        },
+        "acceptedTermsAt": {
+          "type": "string",
+          "description": "ISO timestamp when Terms & Conditions were accepted"
         }
       },
       "required": ["id", "email"]
@@ -46,6 +62,14 @@
         "displayName": {
           "type": "string",
           "description": "Display name"
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique lowercase account handle"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Official OAuth or profile avatar image URL"
         },
         "plan": {
           "type": "string",
@@ -83,6 +107,14 @@
         "updatedAt": {
           "type": "string",
           "description": "ISO timestamp of last update"
+        },
+        "acceptedTerms": {
+          "type": "boolean",
+          "description": "Whether the user accepted Terms & Conditions and Privacy Policy"
+        },
+        "acceptedTermsAt": {
+          "type": "string",
+          "description": "ISO timestamp when Terms & Conditions were accepted"
         }
       },
       "required": ["id", "plan", "characterLimit", "usedCharacters", "isApproved"]
@@ -386,6 +418,31 @@
         }
       },
       "required": ["id", "whatsappNumber", "supportEmail", "updatedAt"]
+    },
+    "UsernameIndex": {
+      "title": "UsernameIndex",
+      "description": "Unique username lookup index mapping normalized lowercase username to user UID and email for username sign-in",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Normalized lowercase username handle"
+        },
+        "uid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Associated account email for sign-in lookup"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when username was claimed"
+        }
+      },
+      "required": ["username", "uid", "email"]
     }
   },
   "firestore": {
@@ -396,6 +453,10 @@
     "/profiles/{userId}": {
       "schema": "Profile",
       "description": "User subscription package, limits, and expiration profile"
+    },
+    "/usernames/{usernameId}": {
+      "schema": "UsernameIndex",
+      "description": "Unique username-to-email lookup registry for username sign-in"
     },
     "/generations/{generationId}": {
       "schema": "Generation",

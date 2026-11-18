@@ -12,13 +12,13 @@ export default function ContactPage() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-16 md:py-20 space-y-10">
       <div className="max-w-2xl space-y-3">
-        <p className="text-xs font-semibold tracking-wide bg-gradient-to-r from-cyan-300 via-violet-300 to-emerald-300 bg-clip-text text-transparent">
+        <p className="text-xs font-semibold tracking-wide bg-gradient-to-r from-cyan-600 via-violet-600 to-emerald-600 dark:from-cyan-300 dark:via-violet-300 dark:to-emerald-300 bg-clip-text text-transparent">
           Support & Inquiries · ABM CodeSpace
         </p>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight [text-wrap:balance]">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight [text-wrap:balance]">
           Contact Echo Clone Studio
         </h1>
-        <p className="text-sm text-slate-300 leading-relaxed">
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
           Have a question about voice credits, PKR package verification, custom voice cloning, or software partnerships with ABM CodeSpace? Reach us directly via email, WhatsApp, or the form below.
         </p>
       </div>

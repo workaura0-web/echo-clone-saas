@@ -8,14 +8,47 @@ import {
   detectLanguageLocale,
   EMOTION_PROFILES,
   EmotionType,
+  GLOBAL_DEMO_LANGUAGES,
+  SAMPLE_TEMPLATES,
   VOICES,
   VoicePersona,
 } from "@/lib/audio/accentsAndVoices";
 import { analyzeScriptEmotionsLocally, AnalyzedSegment } from "@/lib/audio/speechSynth";
 import { getCachedGlobalVoices, GlobalNeuralVoice } from "@/lib/audio/globalVoices";
+import firebaseConfig from "../../../../firebase-applet-config.json";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+const ALLOWED_HOMEPAGE_DEMO_TEXTS = new Set<string>(
+  [
+    SAMPLE_TEMPLATES[0]?.text?.trim(),
+    ...GLOBAL_DEMO_LANGUAGES.map((item) => item.sampleText.trim()),
+  ].filter((t): t is string => Boolean(t))
+);
+
+async function verifyFirebaseIdToken(authHeader: string | null): Promise<string | null> {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const idToken = authHeader.slice(7).trim();
+  if (!idToken || idToken.length < 20) return null;
+
+  try {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseConfig.apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+        cache: "no-store",
+      }
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { users?: Array<{ localId?: string }> };
+    return data?.users?.[0]?.localId || null;
+  } catch {
+    return null;
+  }
+}
 
 const VALID_EMOTIONS: EmotionType[] = [
   "calm",
@@ -347,6 +380,7 @@ export async function POST(req: NextRequest) {
       pitch = 1,
       customSegments,
       customEdgeVoice,
+      referenceVoiceProfile,
       qualitySteps = 32,
       removeSilences = false,
       seed,
@@ -360,6 +394,16 @@ export async function POST(req: NextRequest) {
       pitch?: number;
       customSegments?: AnalyzedSegment[];
       customEdgeVoice?: string;
+      referenceVoiceProfile?: {
+        name?: string;
+        gender?: "Male" | "Female";
+        pitchMultiplier?: number;
+        speakingRate?: number;
+        toneId?: string;
+        recommendedVoiceId?: string;
+        recommendedGeminiVoice?: "Kore" | "Zephyr" | "Puck" | "Charon" | "Fenrir";
+        voiceStylePrompt?: string;
+      };
       qualitySteps?: number;
       removeSilences?: boolean;
       seed?: number;
@@ -370,6 +414,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Text script is required." }, { status: 400 });
     }
 
+    const authenticatedUid = await verifyFirebaseIdToken(req.headers.get("authorization"));
+    if (!authenticatedUid && !ALLOWED_HOMEPAGE_DEMO_TEXTS.has(text.trim())) {
+      return NextResponse.json(
+        {
+          error:
+            "Authentication required. Please create an account or sign in to generate speech in Echo Studio.",
+        },
+        { status: 401 }
+      );
+    }
+
     if (text.length > 50000) {
       return NextResponse.json(
         { error: "Single request chunk must be 50,000 characters or fewer." },
@@ -377,8 +432,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const voice = VOICES.find((v) => v.id === voiceId) || VOICES[0];
+    const refVoiceById = referenceVoiceProfile?.recommendedVoiceId
+      ? VOICES.find((v) => v.id === referenceVoiceProfile.recommendedVoiceId)
+      : undefined;
+    const refVoiceByGender = referenceVoiceProfile?.gender
+      ? VOICES.find((v) => v.gender === referenceVoiceProfile.gender)
+      : undefined;
+    const voice =
+      (referenceVoiceProfile ? refVoiceById || refVoiceByGender : undefined) ||
+      VOICES.find((v) => v.id === voiceId) ||
+      VOICES[0];
     const tone = DELIVERY_TONES.find((t) => t.id === toneId) || DELIVERY_TONES[0];
+
+    const effectiveSpeed = Number(
+      Math.max(
+        0.5,
+        Math.min(
+          2.0,
+          (Number(speed) || 1) *
+            (referenceVoiceProfile?.speakingRate
+              ? Math.max(0.78, Math.min(1.24, referenceVoiceProfile.speakingRate))
+              : 1)
+        )
+      ).toFixed(2)
+    );
+    const effectivePitch = Number(
+      Math.max(
+        0.6,
+        Math.min(
+          1.4,
+          (Number(pitch) || 1) *
+            (referenceVoiceProfile?.pitchMultiplier
+              ? Math.max(0.76, Math.min(1.26, referenceVoiceProfile.pitchMultiplier))
+              : 1)
+        )
+      ).toFixed(2)
+    );
 
     let resolvedLocale = accentId || "en-US";
     let detectedLabel = COUNTRY_ACCENTS.find((a) => a.id === resolvedLocale)?.label || resolvedLocale;
@@ -448,15 +537,103 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // When user explicitly selected an uploaded/recorded reference voice profile,
+    // prefer Gemini Voice Design (gemini-3.8-flash-tts) with the analyzed acoustic style
+    // so timbre, pitch, and delivery tone match the reference sample while speaking ONLY `text`.
+    if (apiKey && !isPreview && referenceVoiceProfile?.voiceStylePrompt && text.length <= 4500) {
+      try {
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+        });
+        const accentObj = COUNTRY_ACCENTS.find((a) => a.id === resolvedLocale);
+        const refDirectedScript =
+          tone.id === "story" || tone.id === "dramatic"
+            ? segments
+                .map((seg) => {
+                  const profile = EMOTION_PROFILES[seg.emotion] || EMOTION_PROFILES.calm;
+                  if (seg.emotion === "laughing") return `<laugh> ${seg.text}`;
+                  if (seg.emotion === "sad") return `<breath> ${seg.text}`;
+                  if (seg.emotion === "whispering") return `<gasp> ${seg.text}`;
+                  if (profile.cueTag) return `${profile.cueTag} ${seg.text}`;
+                  return seg.text;
+                })
+                .join(" ")
+            : text;
+
+        const pitchHint =
+          effectivePitch < 0.92
+            ? "Lower deep vocal register."
+            : effectivePitch > 1.08
+            ? "Elevated brighter vocal register."
+            : "Natural mid vocal register.";
+        const paceHint =
+          effectiveSpeed < 0.92
+            ? "Measured unhurried pacing."
+            : effectiveSpeed > 1.08
+            ? "Crisp energetic pacing."
+            : "";
+
+        const refStyleInstruction =
+          `${referenceVoiceProfile.voiceStylePrompt}. ${pitchHint} ${paceHint} ${
+            accentObj?.styleDirection || `Speak naturally in locale ${resolvedLocale}.`
+          } ${tone.styleDirection}`.trim();
+
+        const targetGeminiVoice =
+          referenceVoiceProfile.recommendedGeminiVoice || voice.geminiVoice;
+
+        const refTtsResponse = await ai.models.generateContent({
+          model: "gemini-3.8-flash-tts",
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: refDirectedScript,
+                  speechMetadata: { style: refStyleInstruction },
+                },
+              ],
+            },
+          ],
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName: targetGeminiVoice } },
+            },
+          },
+        });
+
+        const base64Wav = extractBase64AudioFromResponse(refTtsResponse);
+        if (base64Wav) {
+          const mp3DataUrl = wavBase64ToMp3DataUrl(base64Wav);
+          return NextResponse.json({
+            success: true,
+            engine: mp3DataUrl ? "neural-mp3" : "gemini-tts",
+            audioUrl: mp3DataUrl || `data:audio/wav;base64,${base64Wav}`,
+            resolvedNeuralVoice: `Reference Clone (${referenceVoiceProfile.gender || voice.gender})`,
+            detectedLocale: resolvedLocale,
+            accentLabel: detectedLabel,
+            segments,
+            durationSeconds,
+            voiceName: referenceVoiceProfile.name || voice.name,
+            gender: referenceVoiceProfile.gender || voice.gender,
+            toneLabel: tone.label,
+          });
+        }
+      } catch (refTtsErr) {
+        console.warn("Reference Voice Design fell back to calibrated neural voice:", refTtsErr);
+      }
+    }
+
     const neuralResult = await synthesizeWithEdgeNeuralMp3({
       segments,
       voice,
       resolvedLocale,
       toneId: tone.id,
-      speed: Number(speed) || 1,
-      pitch: Number(pitch) || 1,
+      speed: effectiveSpeed,
+      pitch: effectivePitch,
       isPreview: Boolean(isPreview),
-      customEdgeVoice,
+      customEdgeVoice: referenceVoiceProfile ? undefined : customEdgeVoice,
       qualitySteps: Number(qualitySteps) || 32,
       removeSilences: Boolean(removeSilences),
       seed: typeof seed === "number" ? seed : undefined,
@@ -467,13 +644,19 @@ export async function POST(req: NextRequest) {
         success: true,
         engine: "neural-mp3",
         audioUrl: neuralResult.audioUrl,
-        resolvedNeuralVoice: neuralResult.usedVoice,
+        resolvedNeuralVoice: referenceVoiceProfile
+          ? `${referenceVoiceProfile.name || "Reference"} · ${neuralResult.usedVoice}`
+          : neuralResult.usedVoice,
         detectedLocale: resolvedLocale,
         accentLabel: detectedLabel,
         segments,
         durationSeconds,
-        voiceName: customEdgeVoice ? customEdgeVoice.split("-").pop()?.replace(/Neural$/, "") || voice.name : voice.name,
-        gender: voice.gender,
+        voiceName: referenceVoiceProfile?.name
+          ? `${referenceVoiceProfile.name} (Matched)`
+          : customEdgeVoice
+          ? customEdgeVoice.split("-").pop()?.replace(/Neural$/, "") || voice.name
+          : voice.name,
+        gender: referenceVoiceProfile?.gender || voice.gender,
         toneLabel: tone.label,
       });
     }
@@ -499,7 +682,9 @@ export async function POST(req: NextRequest) {
           : text;
 
       const accentObj = COUNTRY_ACCENTS.find((a) => a.id === resolvedLocale);
-      const styleInstruction = `${voice.voiceDirection} ${accentObj?.styleDirection || `Speak fluently in locale ${resolvedLocale}.`} ${tone.styleDirection}`.trim();
+      const styleInstruction = `${
+        referenceVoiceProfile?.voiceStylePrompt || voice.voiceDirection
+      } ${accentObj?.styleDirection || `Speak fluently in locale ${resolvedLocale}.`} ${tone.styleDirection}`.trim();
 
       for (const model of [tone.ttsModel, "gemini-3.8-flash-lite-tts"]) {
         try {
@@ -514,7 +699,12 @@ export async function POST(req: NextRequest) {
             config: {
               responseModalities: ["AUDIO"],
               speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: voice.geminiVoice } },
+                voiceConfig: {
+                  prebuiltVoiceConfig: {
+                    voiceName:
+                      referenceVoiceProfile?.recommendedGeminiVoice || voice.geminiVoice,
+                  },
+                },
               },
             },
           });
@@ -530,8 +720,8 @@ export async function POST(req: NextRequest) {
               accentLabel: detectedLabel,
               segments,
               durationSeconds,
-              voiceName: voice.name,
-              gender: voice.gender,
+              voiceName: referenceVoiceProfile?.name || voice.name,
+              gender: referenceVoiceProfile?.gender || voice.gender,
               toneLabel: tone.label,
             });
           }

@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { auth } from "@/lib/firebase/auth";
+import { useRouter } from "next/navigation";
 import {
   deleteGenerationRecord,
   GenerationRecord,
   getUserGenerations,
 } from "@/lib/firebase/db";
+import { useAppState } from "@/components/app-state-provider";
 import {
   cacheAudioClip,
   getCachedAudioClip,
@@ -21,7 +22,6 @@ import {
   speakSegmentsExpressively,
   stopSpeaking,
 } from "@/lib/audio/speechSynth";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   Clock,
   Download,
@@ -36,7 +36,9 @@ import {
 } from "lucide-react";
 
 export default function LibraryPage() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const router = useRouter();
+  const { user, authReady } = useAppState();
+  const userId = user?.uid ?? null;
   const [loading, setLoading] = useState(true);
   const [generations, setGenerations] = useState<GenerationRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,30 +51,36 @@ export default function LibraryPage() {
   const stopFallbackRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUserId(user.uid);
-        try {
-          const items = await getUserGenerations(user.uid);
-          setGenerations(items);
-        } catch (err) {
+    if (!authReady) return;
+    if (!user) {
+      setGenerations([]);
+      setLoading(false);
+      router.replace("/login?next=/library");
+      return;
+    }
+
+    let cancelled = false;
+    getUserGenerations(user.uid)
+      .then((items) => {
+        if (!cancelled) setGenerations(items);
+      })
+      .catch((err) => {
+        if (!cancelled) {
           setErrorMsg(
             err instanceof Error ? err.message : "Failed to load saved audio library."
           );
         }
-      } else {
-        setUserId(null);
-        setGenerations([]);
-      }
-      setLoading(false);
-    });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     return () => {
+      cancelled = true;
       stopSpeaking();
       stopFallbackRef.current?.();
-      unsub();
     };
-  }, []);
+  }, [authReady, user, router]);
 
   const stopAllPlayback = () => {
     stopSpeaking();
@@ -109,11 +117,15 @@ export default function LibraryPage() {
 
     // 2. If not cached (or previously generated as fallback), synthesize real neural MP3 on demand
     const segs = parseSegments(item);
-    if (!playableUrl) {
+    if (!playableUrl && user) {
       try {
+        const idToken = await user.getIdToken();
         const res = await fetch("/api/tts", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
           body: JSON.stringify({
             text: item.text,
             voiceId: item.voiceId,
@@ -155,11 +167,15 @@ export default function LibraryPage() {
       setErrorMsg(null);
       let url = await getCachedAudioClip(item.id);
 
-      if (!url) {
+      if (!url && user) {
         const segs = parseSegments(item);
+        const idToken = await user.getIdToken();
         const res = await fetch("/api/tts", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
           body: JSON.stringify({
             text: item.text,
             voiceId: item.voiceId,
@@ -203,17 +219,17 @@ export default function LibraryPage() {
   });
 
   return (
-    <div className="min-h-screen text-slate-100 p-4 md:p-8">
+    <div className="min-h-screen text-slate-900 dark:text-slate-100 p-4 md:p-8">
       <audio ref={audioRef} className="hidden" />
 
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-500/20 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-200 dark:border-indigo-500/20 pb-6">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Audio Library & History
             </h1>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-600 dark:text-slate-300">
               Replay, inspect sentence emotions, and download your generated voice clips.
             </p>
           </div>
@@ -228,17 +244,17 @@ export default function LibraryPage() {
         {/* Search & Filter Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search title, voice, accent, or script..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500"
+              className="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-violet-500 shadow-sm dark:shadow-none"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-slate-900 border border-slate-800">
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-sm dark:shadow-none">
             {[
               { id: "all", label: "All" },
               { id: "story", label: "Story" },
@@ -251,8 +267,8 @@ export default function LibraryPage() {
                 onClick={() => setToneFilter(tab.id)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                   toneFilter === tab.id
-                    ? "bg-slate-800 text-white"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-slate-900 text-white dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
                 }`}
               >
                 {tab.label}
@@ -262,7 +278,7 @@ export default function LibraryPage() {
         </div>
 
         {errorMsg && (
-          <div className="p-4 rounded-xl border border-rose-500/40 bg-rose-950/30 text-xs text-rose-200">
+          <div className="p-4 rounded-xl border border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/30 text-xs text-rose-700 dark:text-rose-200">
             {errorMsg}
           </div>
         )}
@@ -273,18 +289,18 @@ export default function LibraryPage() {
             {[1, 2, 3, 4].map((n) => (
               <div
                 key={n}
-                className="h-44 rounded-xl border border-slate-800 bg-slate-900/50 animate-pulse p-5"
+                className="h-44 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 animate-pulse p-5"
               />
             ))}
           </div>
         ) : !userId ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center space-y-4">
-            <Music className="w-10 h-10 text-violet-400 mx-auto" />
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/50 p-12 text-center space-y-4 shadow-sm dark:shadow-none">
+            <Music className="w-10 h-10 text-violet-600 dark:text-violet-400 mx-auto" />
             <div className="space-y-1">
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 Sign in to view your saved Audio Library
               </h2>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
+              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
                 Your generated stories, speeches, and downloads are synced privately to your account.
               </p>
             </div>
@@ -307,27 +323,27 @@ export default function LibraryPage() {
               return (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-indigo-500/25 bg-gradient-to-br from-[#131936]/90 via-[#0d1226] to-[#0a0e1d] p-5 space-y-4 flex flex-col justify-between hover:border-cyan-500/40 transition-colors shadow-lg shadow-indigo-950/20"
+                  className="rounded-2xl border border-indigo-200 dark:border-indigo-500/25 bg-gradient-to-br from-white via-indigo-50/30 to-slate-50 dark:from-[#131936]/90 dark:via-[#0d1226] dark:to-[#0a0e1d] p-5 space-y-4 flex flex-col justify-between hover:border-cyan-500/50 transition-colors shadow-sm dark:shadow-lg shadow-indigo-950/5 dark:shadow-indigo-950/20"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
-                        <h3 className="text-sm font-bold text-white truncate">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                           {item.title}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                           <span className="flex items-center gap-1">
-                            <Mic className="w-3 h-3 text-fuchsia-400" />
+                            <Mic className="w-3 h-3 text-fuchsia-600 dark:text-fuchsia-400" />
                             {item.voiceName}
                           </span>
-                          <span className="text-slate-500">·</span>
+                          <span className="text-slate-400 dark:text-slate-500">·</span>
                           <span className="flex items-center gap-1">
-                            <Globe2 className="w-3 h-3 text-cyan-400" />
+                            <Globe2 className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                             {item.accentLabel}
                           </span>
-                          <span className="text-slate-500">·</span>
-                          <span className="flex items-center gap-1 font-mono tabular-nums text-emerald-300">
-                            <Clock className="w-3 h-3 text-emerald-400" />
+                          <span className="text-slate-400 dark:text-slate-500">·</span>
+                          <span className="flex items-center gap-1 font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
+                            <Clock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             {item.durationSeconds}s
                           </span>
                         </div>
@@ -336,19 +352,19 @@ export default function LibraryPage() {
                       <button
                         type="button"
                         onClick={() => handleDelete(item.id)}
-                        className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition-colors"
+                        className="p-2 rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                         title="Delete clip"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
 
-                    <p className="text-xs text-slate-200 bg-slate-950/75 p-3 rounded-xl border border-indigo-500/20 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-950/75 p-3 rounded-xl border border-indigo-200/80 dark:border-indigo-500/20 line-clamp-2 leading-relaxed">
                       &ldquo;{item.text}&rdquo;
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                      <span className="text-violet-300 font-medium">{item.toneLabel}</span>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className="text-violet-700 dark:text-violet-300 font-medium">{item.toneLabel}</span>
                       {uniqueEmotions.length > 0 && (
                         <>
                           <span>·</span>
@@ -363,7 +379,7 @@ export default function LibraryPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-indigo-500/20">
+                  <div className="flex items-center justify-between pt-3 border-t border-indigo-200 dark:border-indigo-500/20">
                     <button
                       type="button"
                       onClick={() => handleTogglePlay(item)}
@@ -384,9 +400,9 @@ export default function LibraryPage() {
                       type="button"
                       onClick={() => handleDownload(item)}
                       disabled={downloadingId === item.id}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-500/35 bg-emerald-950/40 hover:bg-emerald-900/50 text-xs font-semibold text-emerald-200 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-500/35 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-xs font-semibold text-emerald-700 dark:text-emerald-200 transition-colors"
                     >
-                      <Download className="w-3.5 h-3.5 text-emerald-400" />
+                      <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       {downloadingId === item.id ? "Preparing MP3..." : "Download MP3"}
                     </button>
                   </div>
@@ -395,11 +411,11 @@ export default function LibraryPage() {
             })}
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center space-y-4">
-            <Music className="w-10 h-10 text-slate-500 mx-auto" />
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/50 p-12 text-center space-y-4 shadow-sm dark:shadow-none">
+            <Music className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
             <div className="space-y-1">
-              <h2 className="text-base font-bold text-white">No Audio Clips Yet</h2>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">No Audio Clips Yet</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
                 Open the TTS Studio, enter a story or speech script, and click Generate Audio to save it here.
               </p>
             </div>

@@ -17,13 +17,20 @@ export async function GET() {
       .map(([locale, localeName]) => ({ locale, localeName }))
       .sort((a, b) => a.localeName.localeCompare(b.localeName));
 
-    return NextResponse.json({
-      success: true,
-      voiceCount: voices.length,
-      localeCount: locales.length,
-      locales,
-      voices,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        voiceCount: voices.length,
+        localeCount: locales.length,
+        locales,
+        voices,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      }
+    );
   } catch (err) {
     console.error("Failed to fetch global voices:", err);
     return NextResponse.json(

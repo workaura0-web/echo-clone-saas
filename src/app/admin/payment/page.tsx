@@ -435,7 +435,7 @@ export default function AdminStudioPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center text-xs">
+      <div className="min-h-screen bg-[var(--echo-canvas-bg)] text-slate-600 dark:text-slate-400 flex items-center justify-center text-xs">
         Loading Admin Studio...
       </div>
     );
@@ -443,15 +443,15 @@ export default function AdminStudioPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-8 flex flex-col items-center justify-center space-y-4">
-        <ShieldAlert className="w-10 h-10 text-rose-500" />
+      <div className="min-h-screen bg-[var(--echo-canvas-bg)] text-slate-900 dark:text-white p-8 flex flex-col items-center justify-center space-y-4">
+        <ShieldAlert className="w-10 h-10 text-rose-600 dark:text-rose-500" />
         <h1 className="text-xl font-bold">Admin Access Required</h1>
-        <p className="text-slate-400 text-xs">
+        <p className="text-slate-600 dark:text-slate-400 text-xs">
           Please sign in with the administrator account ({ADMIN_EMAIL}).
         </p>
         <Link
           href="/login"
-          className="px-5 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-xs font-semibold text-white"
+          className="px-5 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-xs font-semibold text-white shadow-sm shadow-violet-600/20"
         >
           Sign In
         </Link>
@@ -463,48 +463,48 @@ export default function AdminStudioPage() {
   const paidUsersCount = users.filter((u) => u.plan !== "free").length;
 
   return (
-    <div className="min-h-screen text-slate-100 p-4 md:p-8">
+    <div className="min-h-screen text-slate-900 dark:text-slate-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-7">
         {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-indigo-500/20 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-indigo-200 dark:border-indigo-500/20 pb-6">
           <div className="space-y-1">
             <Link
               href="/dashboard"
-              className="text-xs text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"
+              className="text-xs text-cyan-700 dark:text-cyan-300 hover:text-cyan-900 dark:hover:text-cyan-200 inline-flex items-center gap-1 font-medium"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
             </Link>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Admin Studio & Live Package Control
             </h1>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-600 dark:text-slate-300">
               Edit pricing & credits live for Homepage & Checkout, manage user accounts, and approve NayaPay payments.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs font-mono tabular-nums">
-            <div className="px-3.5 py-2 rounded-xl border border-sky-500/30 bg-sky-950/35">
-              Users: <strong className="text-sky-300">{users.length}</strong>
+            <div className="px-3.5 py-2 rounded-xl border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-950/35 text-slate-700 dark:text-slate-200">
+              Users: <strong className="text-sky-700 dark:text-sky-300">{users.length}</strong>
             </div>
-            <div className="px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-950/35">
-              Paid: <strong className="text-emerald-300">{paidUsersCount}</strong>
+            <div className="px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/35 text-slate-700 dark:text-slate-200">
+              Paid: <strong className="text-emerald-700 dark:text-emerald-300">{paidUsersCount}</strong>
             </div>
-            <div className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-950/35">
-              Pending TRX: <strong className="text-amber-300">{pendingPaymentsCount}</strong>
+            <div className="px-3.5 py-2 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-950/35 text-slate-700 dark:text-slate-200">
+              Pending TRX: <strong className="text-amber-700 dark:text-amber-300">{pendingPaymentsCount}</strong>
             </div>
           </div>
         </div>
 
         {/* Section Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl border border-indigo-500/25 bg-slate-950/80">
+          <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl border border-indigo-200 dark:border-indigo-500/25 bg-slate-100 dark:bg-slate-950/80">
             <button
               type="button"
               onClick={() => setActiveTab("pricing")}
               className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
                 activeTab === "pricing"
                   ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white"
               }`}
             >
               <Sliders className="w-3.5 h-3.5" /> Pricing & Credits Editor
@@ -515,7 +515,7 @@ export default function AdminStudioPage() {
               className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
                 activeTab === "users"
                   ? "bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white"
               }`}
             >
               <Users className="w-3.5 h-3.5" /> Users & Quotas ({users.length})
@@ -526,7 +526,7 @@ export default function AdminStudioPage() {
               className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
                 activeTab === "payments"
                   ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white"
               }`}
             >
               <CreditCard className="w-3.5 h-3.5" /> Payment Queue ({pendingPaymentsCount})
@@ -537,7 +537,7 @@ export default function AdminStudioPage() {
               className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
                 activeTab === "support"
                   ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white"
               }`}
             >
               <MessageCircle className="w-3.5 h-3.5" /> WhatsApp & Support
@@ -548,7 +548,7 @@ export default function AdminStudioPage() {
             <div className="flex flex-wrap items-center gap-2.5">
               <Link
                 href="/#pricing"
-                className="px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-xs font-medium text-slate-200 whitespace-nowrap"
+                className="px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 whitespace-nowrap transition-colors"
               >
                 Preview Homepage Pricing
               </Link>
@@ -556,7 +556,7 @@ export default function AdminStudioPage() {
                 type="button"
                 onClick={handleResetDefaults}
                 disabled={savingAll}
-                className="px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-xs font-medium text-slate-300 flex items-center gap-1.5 whitespace-nowrap"
+                className="px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5 whitespace-nowrap transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Reset Defaults
               </button>
@@ -564,7 +564,7 @@ export default function AdminStudioPage() {
                 type="button"
                 onClick={handleSaveAllPlans}
                 disabled={savingAll}
-                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap"
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shadow-sm shadow-emerald-600/20"
               >
                 <Save className="w-3.5 h-3.5" />
                 {savingAll ? "Publishing..." : "Publish All Changes"}
@@ -577,8 +577,8 @@ export default function AdminStudioPage() {
           <div
             className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-4 ${
               notice.type === "error"
-                ? "border-rose-500/40 bg-rose-950/30 text-rose-200"
-                : "border-emerald-500/40 bg-emerald-950/30 text-emerald-200"
+                ? "border-rose-200 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200"
+                : "border-emerald-200 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200"
             }`}
           >
             <span>{notice.text}</span>
@@ -601,57 +601,57 @@ export default function AdminStudioPage() {
 
               const tierStyle =
                 planId === "starter"
-                  ? "border-sky-500/35 bg-gradient-to-b from-sky-950/30 via-[#0d1226] to-[#0a0e1d]"
+                  ? "border-sky-200 dark:border-sky-500/35 bg-gradient-to-b from-sky-50/80 via-white to-slate-50/70 dark:from-sky-950/30 dark:via-[#0d1226] dark:to-[#0a0e1d]"
                   : planId === "creator"
-                  ? "border-fuchsia-500/50 bg-gradient-to-b from-violet-950/45 via-[#0d1226] to-[#0a0e1d]"
+                  ? "border-fuchsia-300 dark:border-fuchsia-500/50 bg-gradient-to-b from-violet-50/85 via-white to-fuchsia-50/50 dark:from-violet-950/45 dark:via-[#0d1226] dark:to-[#0a0e1d]"
                   : planId === "pro"
-                  ? "border-emerald-500/35 bg-gradient-to-b from-emerald-950/30 via-[#0d1226] to-[#0a0e1d]"
+                  ? "border-emerald-200 dark:border-emerald-500/35 bg-gradient-to-b from-emerald-50/80 via-white to-slate-50/70 dark:from-emerald-950/30 dark:via-[#0d1226] dark:to-[#0a0e1d]"
                   : planId === "business"
-                  ? "border-amber-500/35 bg-gradient-to-b from-amber-950/25 via-[#0d1226] to-[#0a0e1d]"
-                  : "border-indigo-500/25 bg-[#0d1226]/90";
+                  ? "border-amber-200 dark:border-amber-500/35 bg-gradient-to-b from-amber-50/80 via-white to-slate-50/70 dark:from-amber-950/25 dark:via-[#0d1226] dark:to-[#0a0e1d]"
+                  : "border-indigo-200 dark:border-indigo-500/25 bg-white/95 dark:bg-[#0d1226]/90";
 
               return (
                 <div
                   key={planId}
-                  className={`rounded-2xl border p-6 space-y-5 shadow-lg shadow-indigo-950/20 ${tierStyle}`}
+                  className={`rounded-2xl border p-6 space-y-5 shadow-lg shadow-indigo-500/10 dark:shadow-indigo-950/20 ${tierStyle}`}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono text-slate-400">
+                        <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                           Plan ID: {plan.id}
                         </span>
                         <span
                           className={`text-[11px] font-semibold ${
-                            plan.isVisible !== false ? "text-emerald-400" : "text-amber-400"
+                            plan.isVisible !== false ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"
                           }`}
                         >
                           · {plan.isVisible !== false ? "Live on Home" : "Hidden on Home"}
                         </span>
                       </div>
-                      <h2 className="text-base font-bold text-white">{plan.name}</h2>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white">{plan.name}</h2>
                     </div>
 
                     <div className="flex items-center gap-3 text-xs">
-                      <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-300">
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
                         <input
                           type="checkbox"
                           checked={plan.isVisible !== false}
                           onChange={(e) =>
                             updateDraftField(planId, "isVisible", e.target.checked)
                           }
-                          className="accent-violet-500"
+                          className="accent-violet-600 dark:accent-violet-500"
                         />
                         Show on Home
                       </label>
-                      <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-300">
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
                         <input
                           type="checkbox"
                           checked={Boolean(plan.isPopular)}
                           onChange={(e) =>
                             updateDraftField(planId, "isPopular", e.target.checked)
                           }
-                          className="accent-violet-500"
+                          className="accent-violet-600 dark:accent-violet-500"
                         />
                         Most Popular
                       </label>
@@ -660,31 +660,31 @@ export default function AdminStudioPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div className="space-y-1">
-                      <label className="text-slate-400 font-medium block">
+                      <label className="text-slate-600 dark:text-slate-400 font-medium block">
                         Package Name
                       </label>
                       <input
                         type="text"
                         value={plan.name}
                         onChange={(e) => updateDraftField(planId, "name", e.target.value)}
-                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white focus:outline-none focus:border-violet-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-slate-400 font-medium block">
+                      <label className="text-slate-600 dark:text-slate-400 font-medium block">
                         Tagline / Target Users
                       </label>
                       <input
                         type="text"
                         value={plan.tagline}
                         onChange={(e) => updateDraftField(planId, "tagline", e.target.value)}
-                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white focus:outline-none focus:border-violet-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-slate-400 font-medium block">
+                      <label className="text-slate-600 dark:text-slate-400 font-medium block">
                         Price (PKR)
                       </label>
                       <input
@@ -694,15 +694,15 @@ export default function AdminStudioPage() {
                         onChange={(e) =>
                           updateDraftField(planId, "pricePkrAmount", Number(e.target.value))
                         }
-                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
                       />
-                      <span className="text-[11px] text-emerald-400 font-mono block">
+                      <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono block">
                         Display: {plan.pricePkr}
                       </span>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-slate-400 font-medium block">
+                      <label className="text-slate-600 dark:text-slate-400 font-medium block">
                         Price (USD $)
                       </label>
                       <input
@@ -712,12 +712,12 @@ export default function AdminStudioPage() {
                         onChange={(e) =>
                           updateDraftField(planId, "priceUsd", Number(e.target.value))
                         }
-                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-slate-400 font-medium block">
+                      <label className="text-slate-600 dark:text-slate-400 font-medium block">
                         Monthly Credits / Characters
                       </label>
                       <input
@@ -728,16 +728,16 @@ export default function AdminStudioPage() {
                         onChange={(e) =>
                           updateDraftField(planId, "characterLimit", Number(e.target.value))
                         }
-                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
                       />
-                      <span className="text-[11px] text-sky-400 font-mono block">
+                      <span className="text-[11px] text-sky-700 dark:text-sky-400 font-mono block">
                         {plan.characterLimit.toLocaleString()} credits · {plan.approxHoursLabel}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="space-y-1">
-                        <label className="text-slate-400 font-medium block">
+                        <label className="text-slate-600 dark:text-slate-400 font-medium block">
                           Max Chars / Gen
                         </label>
                         <input
@@ -752,12 +752,12 @@ export default function AdminStudioPage() {
                               Number(e.target.value)
                             )
                           }
-                          className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
                         />
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-slate-400 font-medium block">
+                        <label className="text-slate-600 dark:text-slate-400 font-medium block">
                           Validity (Days)
                         </label>
                         <input
@@ -768,14 +768,14 @@ export default function AdminStudioPage() {
                           onChange={(e) =>
                             updateDraftField(planId, "validityDays", Number(e.target.value))
                           }
-                          className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-white font-mono tabular-nums focus:outline-none focus:border-violet-500"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-1.5 text-xs">
-                    <label className="text-slate-400 font-medium block">
+                    <label className="text-slate-600 dark:text-slate-400 font-medium block">
                       Package Bullet Features (one line per bullet)
                     </label>
                     <textarea
@@ -788,11 +788,11 @@ export default function AdminStudioPage() {
                           e.target.value.split("\n")
                         )
                       }
-                      className="w-full rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-violet-500"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed focus:outline-none focus:border-violet-500"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
                     <span className="text-[11px] text-slate-500 font-mono">
                       Sort Order: {plan.sortOrder}
                     </span>
@@ -800,7 +800,7 @@ export default function AdminStudioPage() {
                       type="button"
                       onClick={() => handleSaveSinglePlan(planId)}
                       disabled={isSaving}
-                      className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-violet-600/20"
                     >
                       <Save className="w-3.5 h-3.5" />
                       {isSaving ? "Saving..." : "Save & Update Homepage"}
@@ -815,14 +815,14 @@ export default function AdminStudioPage() {
         {/* TAB 2: USERS & PACKAGE SYNC TABLE */}
         {activeTab === "users" && (
           <div className="space-y-3">
-            <h2 className="text-base font-bold text-white">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
               Registered Accounts & Synced Packages ({users.length})
             </h2>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 overflow-hidden shadow-sm dark:shadow-none">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold">
+                <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                  <thead className="bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
                     <tr>
                       <th className="p-3.5">Account</th>
                       <th className="p-3.5">Package</th>
@@ -831,7 +831,7 @@ export default function AdminStudioPage() {
                       <th className="p-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/70">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/70">
                     {users.map((u) => {
                       const status = computePackageStatus({
                         plan: u.plan,
@@ -842,27 +842,29 @@ export default function AdminStudioPage() {
                       });
 
                       return (
-                        <tr key={u.id} className="hover:bg-slate-800/30">
+                        <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
                           <td className="p-3.5">
-                            <div className="font-semibold text-white">{u.displayName}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
+                            <div className="font-semibold text-slate-900 dark:text-white">{u.displayName}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{u.email}</div>
                           </td>
                           <td className="p-3.5">
                             <select
                               value={u.plan}
                               onChange={(e) => handleAssignPlan(u, e.target.value as PlanId)}
-                              className="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-white focus:outline-none focus:border-violet-500"
+                              className="rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-violet-500"
                             >
                               {EDITABLE_PLAN_IDS.map((pid) => {
                                 const p = livePlansMap[pid];
                                 return (
-                                  <option key={pid} value={pid}>
+                                  <option key={pid} value={pid} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
                                     {p.name} ({p.characterLimit.toLocaleString()} credits)
                                   </option>
                                 );
                               })}
                               {u.plan === "enterprise" && (
-                                <option value="enterprise">Studio Enterprise (Legacy)</option>
+                                <option value="enterprise" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+                                  Studio Enterprise (Legacy)
+                                </option>
                               )}
                             </select>
                           </td>
@@ -875,11 +877,11 @@ export default function AdminStudioPage() {
                           </td>
                           <td className="p-3.5 font-mono tabular-nums">
                             {!u.isApproved ? (
-                              <span className="text-rose-400">Suspended</span>
+                              <span className="text-rose-600 dark:text-rose-400">Suspended</span>
                             ) : status.isExpired ? (
-                              <span className="text-rose-400">Expired</span>
+                              <span className="text-rose-600 dark:text-rose-400">Expired</span>
                             ) : (
-                              <span className="text-emerald-400">{status.daysRemaining}d left</span>
+                              <span className="text-emerald-700 dark:text-emerald-400">{status.daysRemaining}d left</span>
                             )}
                           </td>
                           <td className="p-3.5 text-right">
@@ -888,7 +890,7 @@ export default function AdminStudioPage() {
                                 type="button"
                                 onClick={() => handleAssignPlan(u, u.plan)}
                                 title="Reset Quota & Renew"
-                                className="p-1.5 rounded border border-slate-700 bg-slate-950 hover:bg-slate-800 text-sky-400"
+                                className="p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-sky-600 dark:text-sky-400"
                               >
                                 <RefreshCw className="w-3.5 h-3.5" />
                               </button>
@@ -896,7 +898,7 @@ export default function AdminStudioPage() {
                                 type="button"
                                 onClick={() => handleExpireUserNow(u)}
                                 title="Trigger Expiry & Send Notification"
-                                className="p-1.5 rounded border border-slate-700 bg-slate-950 hover:bg-slate-800 text-amber-400"
+                                className="p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-amber-600 dark:text-amber-400"
                               >
                                 <Clock className="w-3.5 h-3.5" />
                               </button>
@@ -904,19 +906,19 @@ export default function AdminStudioPage() {
                                 type="button"
                                 onClick={() => handleAccountApproval(u, !u.isApproved)}
                                 title={u.isApproved ? "Suspend Account" : "Activate Account"}
-                                className="p-1.5 rounded border border-slate-700 bg-slate-950 hover:bg-slate-800 text-slate-300"
+                                className="p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
                               >
                                 {u.isApproved ? (
-                                  <X className="w-3.5 h-3.5 text-amber-400" />
+                                  <X className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                                 ) : (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                 )}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteUser(u)}
                                 title="Remove User"
-                                className="p-1.5 rounded border border-slate-700 bg-slate-950 hover:bg-rose-950 text-rose-400"
+                                className="p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 hover:bg-rose-50 dark:hover:bg-rose-950 text-rose-600 dark:text-rose-400"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -942,14 +944,14 @@ export default function AdminStudioPage() {
         {/* TAB 3: PAYMENT VERIFICATION QUEUE */}
         {activeTab === "payments" && (
           <div className="space-y-3">
-            <h2 className="text-base font-bold text-white">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
               Payment Verification Queue ({payments.length})
             </h2>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 overflow-hidden shadow-sm dark:shadow-none">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold">
+                <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                  <thead className="bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
                     <tr>
                       <th className="p-3.5">Customer</th>
                       <th className="p-3.5">Requested Plan</th>
@@ -959,14 +961,14 @@ export default function AdminStudioPage() {
                       <th className="p-3.5 text-right">Review</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/70">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/70">
                     {payments.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-800/30">
-                        <td className="p-3.5 font-mono text-white">
+                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        <td className="p-3.5 font-mono text-slate-900 dark:text-white">
                           {p.userEmail || p.userId}
                         </td>
                         <td className="p-3.5 font-semibold">{p.planName}</td>
-                        <td className="p-3.5 font-mono text-slate-400">
+                        <td className="p-3.5 font-mono text-slate-500 dark:text-slate-400">
                           {p.transactionId || "—"}
                         </td>
                         <td className="p-3.5 font-mono tabular-nums">
@@ -976,10 +978,10 @@ export default function AdminStudioPage() {
                           <span
                             className={
                               p.status === "approved"
-                                ? "text-emerald-400"
+                                ? "text-emerald-700 dark:text-emerald-400"
                                 : p.status === "rejected"
-                                ? "text-rose-400"
-                                : "text-amber-400"
+                                ? "text-rose-600 dark:text-rose-400"
+                                : "text-amber-700 dark:text-amber-400"
                             }
                           >
                             {p.status}
@@ -997,7 +999,7 @@ export default function AdminStudioPage() {
                             <button
                               type="button"
                               onClick={() => handlePaymentStatus(p, "rejected")}
-                              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium"
+                              className="px-2.5 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium"
                             >
                               Reject
                             </button>
@@ -1023,21 +1025,21 @@ export default function AdminStudioPage() {
         {activeTab === "support" && (
           <form
             onSubmit={handleSaveSupportSettings}
-            className="max-w-2xl rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/25 via-[#0d1226] to-[#0a0e1d] p-6 md:p-8 space-y-6"
+            className="max-w-2xl rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-b from-emerald-50/75 via-white to-slate-50/70 dark:from-emerald-950/25 dark:via-[#0d1226] dark:to-[#0a0e1d] p-6 md:p-8 space-y-6 shadow-lg shadow-emerald-500/10 dark:shadow-none"
           >
-            <div className="space-y-1 border-b border-slate-800 pb-4">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-emerald-400" />
+            <div className="space-y-1 border-b border-slate-200 dark:border-slate-800 pb-4">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 Live WhatsApp Support & Contact Controls
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Changes saved here immediately update the floating WhatsApp icon across all pages, the site footer, and the Contact & About pages.
               </p>
             </div>
 
             <div className="space-y-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-slate-300 font-medium block">
+                <label className="text-slate-700 dark:text-slate-300 font-medium block">
                   WhatsApp Support Number (with country code)
                 </label>
                 <input
@@ -1052,15 +1054,15 @@ export default function AdminStudioPage() {
                     }));
                   }}
                   placeholder="+1 (401) 572-1696"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-emerald-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400"
                 />
-                <p className="text-[11px] text-emerald-400 font-mono break-all">
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono break-all">
                   Live WhatsApp Link: {formatWhatsAppUrl(supportDraft.whatsappNumber)}
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-300 font-medium block">
+                <label className="text-slate-700 dark:text-slate-300 font-medium block">
                   Official Support Email
                 </label>
                 <input
@@ -1075,12 +1077,12 @@ export default function AdminStudioPage() {
                     }));
                   }}
                   placeholder="codeabm71@gmail.com"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 dark:focus:border-cyan-400"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-300 font-medium block">
+                <label className="text-slate-700 dark:text-slate-300 font-medium block">
                   Facebook Page URL
                 </label>
                 <input
@@ -1094,12 +1096,12 @@ export default function AdminStudioPage() {
                     }));
                   }}
                   placeholder="https://www.facebook.com/share/14yWEghicKi/"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 dark:focus:border-sky-400"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-300 font-medium block">
+                <label className="text-slate-700 dark:text-slate-300 font-medium block">
                   Software House / Developer Brand
                 </label>
                 <input
@@ -1113,24 +1115,24 @@ export default function AdminStudioPage() {
                     }));
                   }}
                   placeholder="ABM CodeSpace"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 dark:focus:border-violet-400"
                 />
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <a
                 href={formatWhatsAppUrl(supportDraft.whatsappNumber)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-emerald-300 hover:text-emerald-200 underline underline-offset-4"
+                className="text-xs text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-200 underline underline-offset-4"
               >
                 Test WhatsApp Link
               </a>
               <button
                 type="submit"
                 disabled={savingSupport}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20"
               >
                 <Save className="w-3.5 h-3.5" />
                 {savingSupport ? "Saving..." : "Save & Sync Support"}

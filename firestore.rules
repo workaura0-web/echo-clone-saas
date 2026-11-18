@@ -44,10 +44,20 @@ service cloud.firestore {
         incoming().keys().hasAll(['id', 'email']) &&
         incoming().id == userId &&
         incoming().email is string && incoming().email.size() <= 200 &&
+        (!('photoURL' in incoming()) || (incoming().photoURL is string && incoming().photoURL.size() <= 500)) &&
+        (!('acceptedTerms' in incoming()) || incoming().acceptedTerms is bool) &&
+        (!('acceptedTermsAt' in incoming()) || (incoming().acceptedTermsAt is string && incoming().acceptedTermsAt.size() <= 64)) &&
         (!('role' in incoming()) || incoming().role == 'user' || isAdmin());
       allow update: if isValidId(userId) && (isOwner(userId) || isAdmin()) &&
         incoming().id == existing().id &&
-        (isAdmin() || incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email']));
+        (!('photoURL' in incoming()) || (incoming().photoURL is string && incoming().photoURL.size() <= 500)) &&
+        (
+          isAdmin() ||
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'username', 'photoURL', 'acceptedTerms', 'acceptedTermsAt']) &&
+            (!('username' in existing()) || existing().username == null || existing().username == '' || incoming().username == existing().username)
+          )
+        );
       allow delete: if isValidId(userId) && isAdmin();
     }
 
@@ -60,6 +70,9 @@ service cloud.firestore {
         incoming().id == userId &&
         incoming().usedCharacters is number && incoming().usedCharacters >= 0 &&
         incoming().characterLimit is number && incoming().characterLimit >= 0 &&
+        (!('photoURL' in incoming()) || (incoming().photoURL is string && incoming().photoURL.size() <= 500)) &&
+        (!('acceptedTerms' in incoming()) || incoming().acceptedTerms is bool) &&
+        (!('acceptedTermsAt' in incoming()) || (incoming().acceptedTermsAt is string && incoming().acceptedTermsAt.size() <= 64)) &&
         (isAdmin() || (incoming().plan == 'free' && incoming().characterLimit <= 10000));
       allow update: if isValidId(userId) && (
         isAdmin() ||
@@ -68,9 +81,15 @@ service cloud.firestore {
           incoming().id == existing().id &&
           incoming().usedCharacters is number &&
           incoming().usedCharacters >= 0 &&
+          (!('photoURL' in incoming()) || (incoming().photoURL is string && incoming().photoURL.size() <= 500)) &&
           (
             // Owner incrementing character usage
             incoming().diff(existing()).affectedKeys().hasOnly(['usedCharacters', 'updatedAt']) ||
+            // Owner claiming username once or updating displayName, photoURL, or Terms acceptance
+            (
+              incoming().diff(existing()).affectedKeys().hasOnly(['username', 'displayName', 'photoURL', 'acceptedTerms', 'acceptedTermsAt', 'updatedAt']) &&
+              (!('username' in existing()) || existing().username == null || existing().username == '' || incoming().username == existing().username)
+            ) ||
             // Owner activating/renewing free starter plan
             (
               incoming().diff(existing()).affectedKeys().hasOnly(['plan', 'planName', 'characterLimit', 'usedCharacters', 'maxCharsPerGeneration', 'planStartedAt', 'planExpiresAt', 'updatedAt']) &&
@@ -81,6 +100,31 @@ service cloud.firestore {
         )
       );
       allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Username Lookup Index (Exact single-doc lookup for sign-in & availability; NO public list to prevent scraping)
+    match /usernames/{usernameId} {
+      allow get: if isValidId(usernameId) && usernameId.size() >= 3 && usernameId.size() <= 24;
+      allow list: if isAdmin();
+      allow create: if isValidId(usernameId) &&
+        usernameId.size() >= 3 && usernameId.size() <= 24 &&
+        isSignedIn() &&
+        incoming().uid == request.auth.uid &&
+        incoming().keys().hasAll(['uid', 'email', 'username']) &&
+        incoming().keys().hasOnly(['uid', 'email', 'username', 'createdAt']) &&
+        incoming().uid is string &&
+        incoming().email is string && incoming().email.size() <= 200 &&
+        incoming().username is string && incoming().username.size() >= 3 && incoming().username.size() <= 24;
+      allow update: if isValidId(usernameId) && (
+        isAdmin() ||
+        (
+          isSignedIn() &&
+          existing().uid == request.auth.uid &&
+          incoming().uid == existing().uid &&
+          incoming().keys().hasOnly(['uid', 'email', 'username', 'createdAt'])
+        )
+      );
+      allow delete: if isValidId(usernameId) && isAdmin();
     }
 
     function isValidPricingPlan(data) {

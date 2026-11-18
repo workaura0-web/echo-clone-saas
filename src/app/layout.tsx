@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "@/components/navbar";
 import SiteFooter from "@/components/site-footer";
 import FloatingWhatsApp from "@/components/floating-whatsapp";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AppStateProvider } from "@/components/app-state-provider";
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_TITLE,
@@ -25,7 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const viewport: Viewport = {
   themeColor: "#7c3aed",
-  colorScheme: "dark",
+  colorScheme: "dark light",
   width: "device-width",
   initialScale: 1,
 };
@@ -197,22 +199,35 @@ const structuredGraph = {
   ],
 };
 
+const themeInitScript = `(function(){try{var k='echo-clone-theme';var t=localStorage.getItem(k);var m=(t==='light'||t==='dark')?t:'dark';var r=document.documentElement;if(m==='dark'){r.classList.add('dark');}else{r.classList.remove('dark');}r.dataset.theme=m;r.style.colorScheme=m;}catch(e){document.documentElement.classList.add('dark');}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${plusJakarta.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans echo-studio-canvas text-slate-100 min-h-screen flex flex-col antialiased selection:bg-fuchsia-500/30 selection:text-white">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`dark ${plusJakarta.variable} ${jetbrainsMono.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="font-sans echo-studio-canvas text-[var(--echo-text-primary)] min-h-screen flex flex-col antialiased selection:bg-fuchsia-500/25 selection:text-slate-900 dark:selection:text-white">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredGraph) }}
         />
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
-        <FloatingWhatsApp />
+        <ThemeProvider>
+          <AppStateProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+            <FloatingWhatsApp />
+          </AppStateProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -45,15 +45,15 @@ export function LiveSupportSummaryStrip() {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <a
         href={`mailto:${settings.supportEmail}`}
-        className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/30 via-[#0d1328] to-[#090d1c] p-5 space-y-1.5 hover:border-cyan-400/60 transition-colors"
+        className="rounded-2xl border border-cyan-200 dark:border-cyan-500/30 bg-gradient-to-br from-cyan-50 via-white to-slate-50 dark:from-cyan-950/30 dark:via-[#0d1328] dark:to-[#090d1c] p-5 space-y-1.5 hover:border-cyan-400 dark:hover:border-cyan-400/60 transition-colors shadow-sm dark:shadow-none"
       >
-        <div className="flex items-center gap-2 text-xs font-semibold text-cyan-300">
+        <div className="flex items-center gap-2 text-xs font-semibold text-cyan-700 dark:text-cyan-300">
           <Mail className="w-4 h-4" /> Support Email
         </div>
-        <p className="text-sm font-bold text-white break-all">
+        <p className="text-sm font-bold text-slate-900 dark:text-white break-all">
           {settings.supportEmail}
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-600 dark:text-slate-400">
           Direct support & licensing inquiries
         </p>
       </a>
@@ -62,25 +62,27 @@ export function LiveSupportSummaryStrip() {
         href={formatWhatsAppUrl(settings.whatsappNumber)}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 via-[#0d1328] to-[#090d1c] p-5 space-y-1.5 hover:border-emerald-400/60 transition-colors"
+        className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 via-white to-slate-50 dark:from-emerald-950/30 dark:via-[#0d1328] dark:to-[#090d1c] p-5 space-y-1.5 hover:border-emerald-400 dark:hover:border-emerald-400/60 transition-colors shadow-sm dark:shadow-none"
       >
-        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
+        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
           <Phone className="w-4 h-4" /> WhatsApp & Phone
         </div>
-        <p className="text-sm font-bold text-white font-mono tabular-nums">
+        <p className="text-sm font-bold text-slate-900 dark:text-white font-mono tabular-nums">
           {settings.whatsappNumber}
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-600 dark:text-slate-400">
           Fast creator support & package help
         </p>
       </a>
 
-      <div className="rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/30 via-[#0d1328] to-[#090d1c] p-5 space-y-1.5">
-        <div className="flex items-center gap-2 text-xs font-semibold text-violet-300">
+      <div className="rounded-2xl border border-violet-200 dark:border-violet-500/30 bg-gradient-to-br from-violet-50 via-white to-slate-50 dark:from-violet-950/30 dark:via-[#0d1328] dark:to-[#090d1c] p-5 space-y-1.5 shadow-sm dark:shadow-none">
+        <div className="flex items-center gap-2 text-xs font-semibold text-violet-700 dark:text-violet-300">
           <Building2 className="w-4 h-4" /> Software House
         </div>
-        <p className="text-sm font-bold text-white">{settings.companyName}</p>
-        <p className="text-xs text-slate-400">
+        <p className="text-sm font-bold text-slate-900 dark:text-white">
+          {settings.companyName}
+        </p>
+        <p className="text-xs text-slate-600 dark:text-slate-400">
           Product engineering & AI voice systems
         </p>
       </div>
@@ -130,19 +132,19 @@ export function LiveContactWorkspace() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       {/* Direct Contact Channels */}
       <div className="lg:col-span-5 space-y-5">
-        <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-950/30 via-[#0d1328] to-[#090d1c] p-6 space-y-4">
+        <div className="rounded-2xl border border-cyan-200 dark:border-cyan-500/30 bg-gradient-to-b from-cyan-50 via-white to-slate-50 dark:from-cyan-950/30 dark:via-[#0d1328] dark:to-[#090d1c] p-6 space-y-4 shadow-sm dark:shadow-none">
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-300">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-700 dark:text-cyan-300">
               <Mail className="w-4 h-4" /> Official Email
             </span>
             <button
               type="button"
               onClick={() => handleCopy(settings.supportEmail, "email")}
-              className="p-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
               aria-label="Copy support email"
             >
               {copiedKey === "email" ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -151,39 +153,39 @@ export function LiveContactWorkspace() {
           <div>
             <a
               href={`mailto:${settings.supportEmail}`}
-              className="text-base font-bold text-white hover:text-cyan-300 transition-colors break-all"
+              className="text-base font-bold text-slate-900 dark:text-white hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors break-all"
             >
               {settings.supportEmail}
             </a>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
               Reach out for technical help, billing verification, or custom enterprise integration by {settings.companyName}.
             </p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/30 via-[#0d1328] to-[#090d1c] p-6 space-y-4">
+        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-b from-emerald-50 via-white to-slate-50 dark:from-emerald-950/30 dark:via-[#0d1328] dark:to-[#090d1c] p-6 space-y-4 shadow-sm dark:shadow-none">
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-300">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
               <Phone className="w-4 h-4" /> WhatsApp Support & Phone
             </span>
             <button
               type="button"
               onClick={() => handleCopy(settings.whatsappNumber, "phone")}
-              className="p-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
               aria-label="Copy WhatsApp number"
             >
               {copiedKey === "phone" ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
             </button>
           </div>
           <div>
-            <p className="text-base font-bold text-white font-mono tabular-nums">
+            <p className="text-base font-bold text-slate-900 dark:text-white font-mono tabular-nums">
               {settings.whatsappNumber}
             </p>
-            <p className="text-xs text-slate-400 mt-1 mb-4">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 mb-4">
               Instant assistance for package activation, NayaPay TRX approvals, and studio onboarding.
             </p>
             <a
@@ -200,12 +202,14 @@ export function LiveContactWorkspace() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-violet-500/30 bg-gradient-to-b from-violet-950/30 via-[#0d1328] to-[#090d1c] p-6 space-y-3">
-          <span className="inline-flex items-center gap-2 text-xs font-semibold text-violet-300">
+        <div className="rounded-2xl border border-violet-200 dark:border-violet-500/30 bg-gradient-to-b from-violet-50 via-white to-slate-50 dark:from-violet-950/30 dark:via-[#0d1328] dark:to-[#090d1c] p-6 space-y-3 shadow-sm dark:shadow-none">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-violet-700 dark:text-violet-300">
             <Building2 className="w-4 h-4" /> Engineered By
           </span>
-          <p className="text-base font-bold text-white">{settings.companyName}</p>
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <p className="text-base font-bold text-slate-900 dark:text-white">
+            {settings.companyName}
+          </p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
             Echo Clone is designed, engineered, and maintained by {settings.companyName}, building creator-grade AI voice synthesis and web software products.
           </p>
           <div className="flex items-center gap-3 pt-1">
@@ -214,14 +218,14 @@ export function LiveContactWorkspace() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="WhatsApp"
-              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-emerald-500/30 bg-slate-900/80 hover:bg-emerald-950/50 transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-slate-900/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-transform hover:-translate-y-0.5"
             >
               <WhatsAppOriginalIcon className="w-5 h-5" />
             </a>
             <a
               href={`mailto:${settings.supportEmail}`}
               aria-label="Gmail"
-              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-rose-500/30 bg-slate-900/80 hover:bg-slate-800 transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-rose-200 dark:border-rose-500/30 bg-white dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-transform hover:-translate-y-0.5"
             >
               <GmailOriginalIcon className="w-5 h-5" />
             </a>
@@ -230,7 +234,7 @@ export function LiveContactWorkspace() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Facebook Page"
-              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-sky-500/30 bg-slate-900/80 hover:bg-sky-950/50 transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-sky-200 dark:border-sky-500/30 bg-white dark:bg-slate-900/80 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-transform hover:-translate-y-0.5"
             >
               <FacebookOriginalIcon className="w-5 h-5" />
             </a>
@@ -239,29 +243,31 @@ export function LiveContactWorkspace() {
       </div>
 
       {/* Contact Inquiry Form */}
-      <div className="lg:col-span-7 rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-[#121735]/90 via-[#0d1229]/95 to-[#090d1e] p-6 md:p-8 space-y-5">
-        <div className="space-y-1 border-b border-indigo-500/20 pb-4">
-          <h2 className="text-lg font-bold text-white">Send a Direct Message</h2>
-          <p className="text-xs text-slate-400">
+      <div className="lg:col-span-7 rounded-2xl border border-indigo-200 dark:border-indigo-500/30 bg-white/95 dark:bg-gradient-to-b dark:from-[#121735]/90 dark:via-[#0d1229]/95 dark:to-[#090d1e] p-6 md:p-8 space-y-5 shadow-sm dark:shadow-none">
+        <div className="space-y-1 border-b border-slate-200 dark:border-indigo-500/20 pb-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            Send a Direct Message
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Compose your message below and send it immediately via email or WhatsApp.
           </p>
         </div>
 
         {errorMsg && (
-          <div className="p-3 rounded-xl border border-rose-500/40 bg-rose-950/30 text-xs text-rose-200">
+          <div className="p-3 rounded-xl border border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/30 text-xs text-rose-700 dark:text-rose-200">
             {errorMsg}
           </div>
         )}
 
         {submitted ? (
-          <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-5 space-y-4">
+          <div className="rounded-xl border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30 p-5 space-y-4">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-white">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   Your Inquiry Is Ready to Send
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                   Choose your preferred channel below to dispatch your message directly to our team at {settings.companyName}.
                 </p>
               </div>
@@ -287,7 +293,7 @@ export function LiveContactWorkspace() {
                   setSubmitted(false);
                   setMessage("");
                 }}
-                className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-xs text-slate-300"
+                className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300"
               >
                 Write Another Message
               </button>
@@ -297,7 +303,7 @@ export function LiveContactWorkspace() {
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-slate-300 font-medium block">
+                <label className="text-slate-700 dark:text-slate-300 font-medium block">
                   Your Name
                 </label>
                 <input
@@ -306,11 +312,11 @@ export function LiveContactWorkspace() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ali Raza"
-                  className="w-full rounded-xl border border-indigo-500/25 bg-slate-950/90 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full rounded-xl border border-slate-300 dark:border-indigo-500/25 bg-slate-50 dark:bg-slate-950/90 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 dark:focus:border-cyan-400"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-slate-300 font-medium block">
+                <label className="text-slate-700 dark:text-slate-300 font-medium block">
                   Email Address
                 </label>
                 <input
@@ -319,17 +325,19 @@ export function LiveContactWorkspace() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-xl border border-indigo-500/25 bg-slate-950/90 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full rounded-xl border border-slate-300 dark:border-indigo-500/25 bg-slate-50 dark:bg-slate-950/90 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 dark:focus:border-cyan-400"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-medium block">Topic</label>
+              <label className="text-slate-700 dark:text-slate-300 font-medium block">
+                Topic
+              </label>
               <select
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="w-full rounded-xl border border-indigo-500/25 bg-slate-950/90 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
+                className="w-full rounded-xl border border-slate-300 dark:border-indigo-500/25 bg-slate-50 dark:bg-slate-950/90 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 dark:focus:border-cyan-400"
               >
                 <option value="Voice Studio & Account Support">
                   Voice Studio & Account Support
@@ -347,14 +355,16 @@ export function LiveContactWorkspace() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-medium block">Message</label>
+              <label className="text-slate-700 dark:text-slate-300 font-medium block">
+                Message
+              </label>
               <textarea
                 rows={5}
                 required
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Tell us how we can help..."
-                className="w-full rounded-xl border border-indigo-500/25 bg-slate-950/90 p-3.5 text-sm text-white leading-relaxed focus:outline-none focus:border-cyan-400"
+                className="w-full rounded-xl border border-slate-300 dark:border-indigo-500/25 bg-slate-50 dark:bg-slate-950/90 p-3.5 text-sm text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-violet-500 dark:focus:border-cyan-400"
               />
             </div>
 

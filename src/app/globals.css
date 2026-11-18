@@ -3,41 +3,59 @@
 @tailwind utilities;
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  color-scheme: light;
+  --background: oklch(0.985 0.004 255);
+  --foreground: oklch(0.16 0.025 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.16 0.025 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.16 0.025 260);
+  --primary: oklch(0.52 0.23 285);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.01 255);
+  --secondary-foreground: oklch(0.22 0.025 260);
+  --muted: oklch(0.955 0.01 255);
+  --muted-foreground: oklch(0.45 0.02 258);
+  --accent: oklch(0.945 0.02 255);
+  --accent-foreground: oklch(0.2 0.03 260);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: oklch(0.89 0.015 255);
+  --input: oklch(0.89 0.015 255);
+  --ring: oklch(0.58 0.19 270);
+  --chart-1: oklch(0.55 0.2 280);
+  --chart-2: oklch(0.6 0.16 205);
+  --chart-3: oklch(0.62 0.16 155);
+  --chart-4: oklch(0.68 0.16 70);
+  --chart-5: oklch(0.6 0.2 15);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.985 0.004 255);
+  --sidebar-foreground: oklch(0.16 0.025 260);
+  --sidebar-primary: oklch(0.52 0.23 285);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.955 0.01 255);
+  --sidebar-accent-foreground: oklch(0.2 0.03 260);
+  --sidebar-border: oklch(0.89 0.015 255);
+  --sidebar-ring: oklch(0.58 0.19 270);
+
+  /* Echo Clone Studio Semantic Surface Tokens (Light Mode) */
+  --echo-canvas-bg: #f4f7fc;
+  --echo-canvas-glow-1: rgba(124, 58, 237, 0.09);
+  --echo-canvas-glow-2: rgba(6, 182, 212, 0.09);
+  --echo-canvas-glow-3: rgba(16, 185, 129, 0.06);
+  --echo-surface: #ffffff;
+  --echo-surface-elevated: #f8faff;
+  --echo-surface-subtle: #eef2f9;
+  --echo-text-primary: #0f172a;
+  --echo-text-secondary: #334155;
+  --echo-text-muted: #64748b;
+  --echo-border: rgba(99, 102, 241, 0.2);
+  --echo-border-subtle: rgba(15, 23, 42, 0.1);
+  --echo-nav-bg: rgba(255, 255, 255, 0.88);
+  --echo-footer-bg: rgba(248, 250, 252, 0.96);
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -69,15 +87,47 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Echo Clone Studio Semantic Surface Tokens (Dark Mode) */
+  --echo-canvas-bg: #070a17;
+  --echo-canvas-glow-1: rgba(124, 58, 237, 0.16);
+  --echo-canvas-glow-2: rgba(6, 182, 212, 0.14);
+  --echo-canvas-glow-3: rgba(16, 185, 129, 0.08);
+  --echo-surface: #0d1226;
+  --echo-surface-elevated: #121735;
+  --echo-surface-subtle: #090d1c;
+  --echo-text-primary: #f8fafc;
+  --echo-text-secondary: #cbd5e1;
+  --echo-text-muted: #94a3b8;
+  --echo-border: rgba(99, 102, 241, 0.28);
+  --echo-border-subtle: rgba(255, 255, 255, 0.1);
+  --echo-nav-bg: rgba(7, 10, 23, 0.86);
+  --echo-footer-bg: rgba(6, 9, 21, 0.96);
+}
+
+html,
+body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a,
+button,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
 }
 
 .echo-studio-canvas {
-  background-color: #070a17;
+  background-color: var(--echo-canvas-bg);
+  color: var(--echo-text-primary);
   background-image:
-    radial-gradient(ellipse 75% 45% at 12% 0%, rgba(124, 58, 237, 0.16), transparent 60%),
-    radial-gradient(ellipse 65% 45% at 88% 8%, rgba(6, 182, 212, 0.14), transparent 60%),
-    radial-gradient(ellipse 60% 45% at 50% 95%, rgba(16, 185, 129, 0.08), transparent 65%);
-  background-attachment: fixed;
+    radial-gradient(ellipse 75% 45% at 12% 0%, var(--echo-canvas-glow-1), transparent 60%),
+    radial-gradient(ellipse 65% 45% at 88% 8%, var(--echo-canvas-glow-2), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 50% 95%, var(--echo-canvas-glow-3), transparent 65%);
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 @keyframes echoWaveBar {
@@ -97,5 +147,8 @@
 @media (prefers-reduced-motion: reduce) {
   .echo-wave-bar {
     animation: none;
+  }
+  .echo-studio-canvas {
+    transition: none;
   }
 }

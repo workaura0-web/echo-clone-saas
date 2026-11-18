@@ -473,7 +473,8 @@ export const EMOTION_PROFILES: Record<EmotionType, EmotionProfile> = {
     edgePitchDelta: 0,
     edgeRateDelta: -2,
     cueTag: "",
-    colorClass: "text-slate-300 border-slate-700 bg-slate-800/70",
+    colorClass:
+      "text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/70",
   },
   angry: {
     id: "angry",
@@ -485,7 +486,8 @@ export const EMOTION_PROFILES: Record<EmotionType, EmotionProfile> = {
     edgePitchDelta: -6,
     edgeRateDelta: 12,
     cueTag: "[fierce, sharp anger]",
-    colorClass: "text-rose-300 border-rose-500/40 bg-rose-500/15",
+    colorClass:
+      "text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-500/15",
   },
   laughing: {
     id: "laughing",
@@ -497,7 +499,8 @@ export const EMOTION_PROFILES: Record<EmotionType, EmotionProfile> = {
     edgePitchDelta: 10,
     edgeRateDelta: 7,
     cueTag: "<laugh>",
-    colorClass: "text-amber-300 border-amber-500/40 bg-amber-500/15",
+    colorClass:
+      "text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/15",
   },
   humorous: {
     id: "humorous",
@@ -509,7 +512,8 @@ export const EMOTION_PROFILES: Record<EmotionType, EmotionProfile> = {
     edgePitchDelta: 7,
     edgeRateDelta: 5,
     cueTag: "[witty, amused chuckle]",
-    colorClass: "text-emerald-300 border-emerald-500/40 bg-emerald-500/15",
+    colorClass:
+      "text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/15",
   },
   sad: {
     id: "sad",
@@ -521,7 +525,8 @@ export const EMOTION_PROFILES: Record<EmotionType, EmotionProfile> = {
     edgePitchDelta: -10,
     edgeRateDelta: -14,
     cueTag: "<breath> [soft, sorrowful]",
-    colorClass: "text-sky-300 border-sky-500/40 bg-sky-500/15",
+    colorClass:
+      "text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-500/40 bg-sky-50 dark:bg-sky-500/15",
   },
   excited: {
     id: "excited",
@@ -533,7 +538,8 @@ export const EMOTION_PROFILES: Record<EmotionType, EmotionProfile> = {
     edgePitchDelta: 8,
     edgeRateDelta: 10,
     cueTag: "[bright enthusiasm]",
-    colorClass: "text-fuchsia-300 border-fuchsia-500/40 bg-fuchsia-500/15",
+    colorClass:
+      "text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-300 dark:border-fuchsia-500/40 bg-fuchsia-50 dark:bg-fuchsia-500/15",
   },
   whispering: {
     id: "whispering",
@@ -545,7 +551,8 @@ export const EMOTION_PROFILES: Record<EmotionType, EmotionProfile> = {
     edgePitchDelta: -6,
     edgeRateDelta: -12,
     cueTag: "<gasp> [hushed whisper]",
-    colorClass: "text-violet-300 border-violet-500/40 bg-violet-500/15",
+    colorClass:
+      "text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-500/40 bg-violet-50 dark:bg-violet-500/15",
   },
 };
 

@@ -1,22 +1,19 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { auth, ensureUserProfile, UserProfile } from "@/lib/firebase/auth";
 import {
   activateFreeStarterPlan,
   submitPaymentRequest,
-  subscribePricingPlans,
 } from "@/lib/firebase/db";
+import { useAppState } from "@/components/app-state-provider";
 import {
   EDITABLE_PLAN_IDS,
   getPlanDefinition,
   PLANS,
-  PlanDefinition,
   PlanId,
 } from "@/lib/plans";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   ArrowLeft,
   Building,
@@ -33,13 +30,12 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const initialParam = searchParams.get("plan") as PlanId | null;
 
-  const [livePlansMap, setLivePlansMap] = useState<Record<PlanId, PlanDefinition>>(PLANS);
+  const { user: authUser, authReady, profile, livePlansMap } = useAppState();
+  const user = authUser ? { id: authUser.uid, email: authUser.email || "" } : null;
+  const loading = !authReady;
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(
     initialParam && initialParam in PLANS ? initialParam : "creator"
   );
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,29 +47,6 @@ function CheckoutContent() {
     nayapayNumber: "03313429680",
     nayapayIban: "PK38 NAYA1234 5033 1342 9680",
   };
-
-  useEffect(() => {
-    const unsubPlans = subscribePricingPlans((mergedMap) => {
-      setLivePlansMap(mergedMap);
-    });
-
-    const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser({ id: currentUser.uid, email: currentUser.email || "" });
-        const prof = await ensureUserProfile(currentUser);
-        setProfile(prof);
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      unsubPlans();
-      unsubAuth();
-    };
-  }, []);
 
   const plan = getPlanDefinition(selectedPlan, livePlansMap);
   const orderedPlans = EDITABLE_PLAN_IDS.filter(
@@ -163,23 +136,23 @@ function CheckoutContent() {
         <div className="space-y-1">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
           </Link>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Packages & Subscription Checkout
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Choose your monthly credit package below. Live pricing and credits sync directly with your Echo Clone account.
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-800 bg-slate-900 px-4 py-2.5 text-xs flex items-center gap-3">
-          <User className="w-4 h-4 text-violet-400" />
+        <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900 px-4 py-2.5 text-xs flex items-center gap-3 shadow-sm dark:shadow-none">
+          <User className="w-4 h-4 text-violet-600 dark:text-violet-400" />
           <div>
-            <p className="text-slate-400">Account</p>
-            <p className="font-semibold text-white">
+            <p className="text-slate-500 dark:text-slate-400">Account</p>
+            <p className="font-semibold text-slate-900 dark:text-white">
               {loading
                 ? "Loading..."
                 : user
@@ -197,14 +170,14 @@ function CheckoutContent() {
           const isSelected = selectedPlan === item.id;
           const tierBorder =
             key === "free"
-              ? "from-slate-900/80 to-slate-950/90 border-slate-700/60"
+              ? "from-slate-50 to-white dark:from-slate-900/80 dark:to-slate-950/90 border-slate-300 dark:border-slate-700/60"
               : key === "starter"
-              ? "from-sky-950/35 to-[#0a0f20] border-sky-500/35"
+              ? "from-sky-50 to-white dark:from-sky-950/35 dark:to-[#0a0f20] border-sky-200 dark:border-sky-500/35"
               : key === "creator"
-              ? "from-violet-950/55 via-fuchsia-950/20 to-[#0a0f20] border-fuchsia-400/50"
+              ? "from-violet-50 via-fuchsia-50/40 to-white dark:from-violet-950/55 dark:via-fuchsia-950/20 dark:to-[#0a0f20] border-fuchsia-300 dark:border-fuchsia-400/50"
               : key === "pro"
-              ? "from-emerald-950/35 to-[#0a0f20] border-emerald-500/35"
-              : "from-amber-950/30 to-[#0a0f20] border-amber-500/35";
+              ? "from-emerald-50 to-white dark:from-emerald-950/35 dark:to-[#0a0f20] border-emerald-200 dark:border-emerald-500/35"
+              : "from-amber-50 to-white dark:from-amber-950/30 dark:to-[#0a0f20] border-amber-200 dark:border-amber-500/35";
           return (
             <button
               key={item.id}
@@ -213,38 +186,38 @@ function CheckoutContent() {
                 setSelectedPlan(item.id);
                 setMessage(null);
               }}
-              className={`rounded-2xl border bg-gradient-to-b p-5 text-left transition-all flex flex-col justify-between space-y-4 ${
+              className={`rounded-2xl border bg-gradient-to-b p-5 text-left transition-all flex flex-col justify-between space-y-4 shadow-sm dark:shadow-none ${
                 isSelected
-                  ? "border-cyan-400 ring-1 ring-cyan-400/50 from-indigo-950/75 to-[#0a0f22] shadow-lg shadow-cyan-950/30"
-                  : `${tierBorder} hover:brightness-110`
+                  ? "border-cyan-500 dark:border-cyan-400 ring-1 ring-cyan-500/40 dark:ring-cyan-400/50 from-indigo-50 via-white to-cyan-50 dark:from-indigo-950/75 dark:via-[#0d1226] dark:to-[#0a0f22] shadow-lg shadow-cyan-950/10 dark:shadow-cyan-950/30"
+                  : `${tierBorder} hover:brightness-[0.98] dark:hover:brightness-110`
               }`}
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold text-white">{item.name}</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{item.name}</span>
                   {isSelected ? (
-                    <span className="text-[11px] font-semibold text-cyan-300">
+                    <span className="text-[11px] font-semibold text-cyan-700 dark:text-cyan-300">
                       Selected
                     </span>
                   ) : item.isPopular ? (
-                    <span className="text-[10px] font-bold text-fuchsia-300">
+                    <span className="text-[10px] font-bold text-fuchsia-700 dark:text-fuchsia-300">
                       Popular
                     </span>
                   ) : null}
                 </div>
 
                 <div>
-                  <p className="text-xl font-extrabold text-white font-mono tabular-nums">
+                  <p className="text-xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
                     PKR {item.pricePkrAmount.toLocaleString()}
                   </p>
-                  <p className="text-[11px] text-slate-400 font-mono">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                     {item.priceDisplayUsd} / {item.validityDays} days
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-slate-950/75 px-3 py-2">
-                  <p className="text-[11px] text-slate-400">Monthly Credits</p>
-                  <p className="text-sm font-bold text-emerald-300 font-mono tabular-nums">
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/75 px-3 py-2">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Monthly Credits</p>
+                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 font-mono tabular-nums">
                     {item.characterLimit.toLocaleString()}
                   </p>
                   <p className="text-[10px] text-slate-500 font-mono">
@@ -254,8 +227,8 @@ function CheckoutContent() {
 
                 <ul className="space-y-1.5 pt-1">
                   {item.features.slice(0, 4).map((f, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-[11px] text-slate-300">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    <li key={idx} className="flex items-start gap-2 text-[11px] text-slate-700 dark:text-slate-300">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
                   ))}
@@ -270,8 +243,8 @@ function CheckoutContent() {
         <div
           className={`p-4 rounded-xl border text-xs font-medium ${
             message.type === "success"
-              ? "border-emerald-500/40 bg-emerald-950/30 text-emerald-200"
-              : "border-rose-500/40 bg-rose-950/30 text-rose-200"
+              ? "border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200"
+              : "border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200"
           }`}
         >
           {message.text}
@@ -280,12 +253,12 @@ function CheckoutContent() {
 
       {/* Checkout Action Area */}
       {selectedPlan === "free" ? (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm dark:shadow-none">
           <div className="space-y-1">
-            <h2 className="text-base font-bold text-white">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
               Activate {plan.name}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Includes {plan.characterLimit.toLocaleString()} credits valid for {plan.validityDays} days across all languages.
             </p>
           </div>
@@ -300,81 +273,81 @@ function CheckoutContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-6 rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="lg:col-span-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 space-y-4 shadow-sm dark:shadow-none">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-sky-400" />
-                <h2 className="text-sm font-bold text-white">NayaPay / Bank Transfer</h2>
+                <CreditCard className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">NayaPay / Bank Transfer</h2>
               </div>
-              <span className="text-xs font-mono text-emerald-400 font-semibold">
+              <span className="text-xs font-mono text-emerald-700 dark:text-emerald-400 font-semibold">
                 {plan.pricePkr}
               </span>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-lg border border-slate-800 bg-slate-950/60 flex items-center justify-between">
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
                 <div>
-                  <span className="text-slate-400 block">Account Title</span>
-                  <span className="font-semibold text-white">{NAYAPAY_DETAILS.accountTitle}</span>
+                  <span className="text-slate-500 dark:text-slate-400 block">Account Title</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{NAYAPAY_DETAILS.accountTitle}</span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg border border-slate-800 bg-slate-950/60 flex items-center justify-between gap-2">
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between gap-2">
                 <div>
-                  <span className="text-slate-400 block">NayaPay ID</span>
-                  <span className="font-mono font-semibold text-sky-300">
+                  <span className="text-slate-500 dark:text-slate-400 block">NayaPay ID</span>
+                  <span className="font-mono font-semibold text-sky-700 dark:text-sky-300">
                     {NAYAPAY_DETAILS.nayapayId}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(NAYAPAY_DETAILS.nayapayId, "id")}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  className="p-1.5 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
                 >
                   {copiedField === "id" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}
                 </button>
               </div>
 
-              <div className="p-3 rounded-lg border border-slate-800 bg-slate-950/60 flex items-center justify-between gap-2">
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between gap-2">
                 <div>
-                  <span className="text-slate-400 block">Mobile / Account Number</span>
-                  <span className="font-mono font-bold text-emerald-400">
+                  <span className="text-slate-500 dark:text-slate-400 block">Mobile / Account Number</span>
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
                     {NAYAPAY_DETAILS.nayapayNumber}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(NAYAPAY_DETAILS.nayapayNumber, "num")}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  className="p-1.5 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
                 >
                   {copiedField === "num" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}
                 </button>
               </div>
 
-              <div className="p-3 rounded-lg border border-slate-800 bg-slate-950/60 flex items-center justify-between gap-2">
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between gap-2">
                 <div>
-                  <span className="text-slate-400 flex items-center gap-1">
-                    <Building className="w-3 h-3 text-sky-400" /> IBAN
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <Building className="w-3 h-3 text-sky-600 dark:text-sky-400" /> IBAN
                   </span>
-                  <span className="font-mono font-semibold text-slate-200">
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
                     {NAYAPAY_DETAILS.nayapayIban}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(NAYAPAY_DETAILS.nayapayIban, "iban")}
-                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                  className="p-1.5 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
                 >
                   {copiedField === "iban" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}
@@ -385,25 +358,25 @@ function CheckoutContent() {
 
           <form
             onSubmit={handleSubmitPayment}
-            className="lg:col-span-6 rounded-xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col justify-between space-y-5"
+            className="lg:col-span-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 flex flex-col justify-between space-y-5 shadow-sm dark:shadow-none"
           >
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Submit Payment Reference
                 </h2>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                   {plan.name} · {plan.characterLimit.toLocaleString()} credits
                 </span>
               </div>
 
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Send <strong className="text-white">{plan.pricePkr}</strong> ({plan.priceDisplayUsd}) to the NayaPay details on the left, then submit your Transaction Reference ID below.
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Send <strong className="text-slate-900 dark:text-white">{plan.pricePkr}</strong> ({plan.priceDisplayUsd}) to the NayaPay details on the left, then submit your Transaction Reference ID below.
               </p>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300 block">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
                   Transaction Reference ID (TRX / Ref No.)
                 </label>
                 <input
@@ -412,7 +385,7 @@ function CheckoutContent() {
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
                   placeholder="e.g. 982347102934"
-                  className="w-full rounded-lg border border-slate-800 bg-slate-950 p-3 text-sm text-white font-mono focus:outline-none focus:border-violet-500"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm text-slate-900 dark:text-white font-mono placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-violet-500"
                 />
               </div>
             </div>
@@ -444,8 +417,8 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <div className="min-h-screen text-slate-100 p-4 md:p-10 flex justify-center">
-      <Suspense fallback={<div className="text-slate-400 text-xs">Loading packages...</div>}>
+    <div className="min-h-screen text-slate-900 dark:text-slate-100 p-4 md:p-10 flex justify-center">
+      <Suspense fallback={<div className="text-slate-600 dark:text-slate-400 text-xs">Loading packages...</div>}>
         <CheckoutContent />
       </Suspense>
     </div>
