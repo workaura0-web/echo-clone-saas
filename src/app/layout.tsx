@@ -131,6 +131,7 @@ const structuredGraph = {
       "@id": `${SITE_URL}/#abm-codespace`,
       name: "ABM CodeSpace",
       url: SITE_URL,
+      sameAs: ["https://www.facebook.com/share/14yWEghicKi/"],
       description:
         "ABM CodeSpace is the software house and engineering team behind Echo Clone Studio.",
       email: "codeabm71@gmail.com",

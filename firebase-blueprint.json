@@ -372,6 +372,10 @@
           "type": "string",
           "description": "Official support email address"
         },
+        "facebookUrl": {
+          "type": "string",
+          "description": "Official Facebook page URL"
+        },
         "companyName": {
           "type": "string",
           "description": "Software house / developer brand name"

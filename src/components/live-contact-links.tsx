@@ -17,6 +17,11 @@ import {
   normalizeWhatsAppDigits,
   SupportSettings,
 } from "@/lib/support";
+import {
+  FacebookOriginalIcon,
+  GmailOriginalIcon,
+  WhatsAppOriginalIcon,
+} from "@/components/brand-social-icons";
 
 export function useLiveSupportSettings() {
   const [settings, setSettings] = useState<SupportSettings>(
@@ -195,7 +200,7 @@ export function LiveContactWorkspace() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-violet-500/30 bg-gradient-to-b from-violet-950/30 via-[#0d1328] to-[#090d1c] p-6 space-y-2">
+        <div className="rounded-2xl border border-violet-500/30 bg-gradient-to-b from-violet-950/30 via-[#0d1328] to-[#090d1c] p-6 space-y-3">
           <span className="inline-flex items-center gap-2 text-xs font-semibold text-violet-300">
             <Building2 className="w-4 h-4" /> Engineered By
           </span>
@@ -203,6 +208,33 @@ export function LiveContactWorkspace() {
           <p className="text-xs text-slate-400 leading-relaxed">
             Echo Clone is designed, engineered, and maintained by {settings.companyName}, building creator-grade AI voice synthesis and web software products.
           </p>
+          <div className="flex items-center gap-3 pt-1">
+            <a
+              href={formatWhatsAppUrl(settings.whatsappNumber)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="WhatsApp"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-emerald-500/30 bg-slate-900/80 hover:bg-emerald-950/50 transition-transform hover:-translate-y-0.5"
+            >
+              <WhatsAppOriginalIcon className="w-5 h-5" />
+            </a>
+            <a
+              href={`mailto:${settings.supportEmail}`}
+              aria-label="Gmail"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-rose-500/30 bg-slate-900/80 hover:bg-slate-800 transition-transform hover:-translate-y-0.5"
+            >
+              <GmailOriginalIcon className="w-5 h-5" />
+            </a>
+            <a
+              href={settings.facebookUrl || DEFAULT_SUPPORT_SETTINGS.facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook Page"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-sky-500/30 bg-slate-900/80 hover:bg-sky-950/50 transition-transform hover:-translate-y-0.5"
+            >
+              <FacebookOriginalIcon className="w-5 h-5" />
+            </a>
+          </div>
         </div>
       </div>
 

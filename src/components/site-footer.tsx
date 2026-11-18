@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Mail, Phone } from "lucide-react";
 import { subscribeSupportSettings } from "@/lib/firebase/db";
 import {
   DEFAULT_SUPPORT_SETTINGS,
   formatWhatsAppUrl,
   SupportSettings,
 } from "@/lib/support";
+import {
+  FacebookOriginalIcon,
+  GmailOriginalIcon,
+  WhatsAppOriginalIcon,
+} from "@/components/brand-social-icons";
 
 const HIDDEN_FOOTER_PREFIXES = ["/studio", "/login", "/signup", "/reset-password", "/admin"];
 
@@ -39,7 +43,7 @@ export default function SiteFooter() {
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-10">
         {/* Structured Multi-Column Footer */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          {/* Brand & Direct Support Info */}
+          {/* Brand & Compact Social / Support Icons */}
           <div className="md:col-span-5 space-y-4">
             <Link
               href="/"
@@ -67,22 +71,37 @@ export default function SiteFooter() {
               Expressive AI voice synthesis and multi-emotion story narration studio across 140+ languages and 300+ human voices with instant Chrome MP3 exports.
             </p>
 
-            <div className="space-y-2 pt-1 text-xs">
-              <a
-                href={`mailto:${settings.supportEmail}`}
-                className="flex items-center gap-2 text-slate-300 hover:text-cyan-300 transition-colors w-fit"
-              >
-                <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span>{settings.supportEmail}</span>
-              </a>
+            {/* Clean Icon-Only Support & Social Links (No Raw Phone/Email Text) */}
+            <div className="flex items-center gap-3 pt-1">
               <a
                 href={formatWhatsAppUrl(settings.whatsappNumber)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-slate-300 hover:text-emerald-300 transition-colors w-fit font-mono tabular-nums"
+                aria-label="WhatsApp Support"
+                title="WhatsApp Support"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-emerald-500/30 bg-slate-900/80 hover:bg-emerald-950/60 hover:border-emerald-400/60 transition-transform duration-200 hover:-translate-y-0.5"
               >
-                <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>{settings.whatsappNumber}</span>
+                <WhatsAppOriginalIcon className="w-5 h-5" />
+              </a>
+
+              <a
+                href={`mailto:${settings.supportEmail}`}
+                aria-label="Gmail Support"
+                title="Send Email"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-rose-500/30 bg-slate-900/80 hover:bg-slate-800 hover:border-cyan-400/60 transition-transform duration-200 hover:-translate-y-0.5"
+              >
+                <GmailOriginalIcon className="w-5 h-5" />
+              </a>
+
+              <a
+                href={settings.facebookUrl || DEFAULT_SUPPORT_SETTINGS.facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="ABM CodeSpace Facebook Page"
+                title="Facebook Page"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-sky-500/30 bg-slate-900/80 hover:bg-sky-950/60 hover:border-sky-400/60 transition-transform duration-200 hover:-translate-y-0.5"
+              >
+                <FacebookOriginalIcon className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -147,7 +166,7 @@ export default function SiteFooter() {
                   href="/contact"
                   className="hover:text-emerald-300 transition-colors"
                 >
-                  Contact Us
+                Contact Us
                 </Link>
               </li>
               <li>

@@ -483,6 +483,10 @@ export async function getSupportSettings(): Promise<SupportSettings> {
         typeof data.supportEmail === "string" && data.supportEmail.trim()
           ? data.supportEmail.trim()
           : DEFAULT_SUPPORT_SETTINGS.supportEmail,
+      facebookUrl:
+        typeof data.facebookUrl === "string" && data.facebookUrl.trim()
+          ? data.facebookUrl.trim()
+          : DEFAULT_SUPPORT_SETTINGS.facebookUrl,
       companyName:
         typeof data.companyName === "string" && data.companyName.trim()
           ? data.companyName.trim()
@@ -515,6 +519,10 @@ export function subscribeSupportSettings(
           typeof data.supportEmail === "string" && data.supportEmail.trim()
             ? data.supportEmail.trim()
             : DEFAULT_SUPPORT_SETTINGS.supportEmail,
+        facebookUrl:
+          typeof data.facebookUrl === "string" && data.facebookUrl.trim()
+            ? data.facebookUrl.trim()
+            : DEFAULT_SUPPORT_SETTINGS.facebookUrl,
         companyName:
           typeof data.companyName === "string" && data.companyName.trim()
             ? data.companyName.trim()
@@ -531,6 +539,7 @@ export function subscribeSupportSettings(
 export async function saveSupportSettings(settings: {
   whatsappNumber: string;
   supportEmail: string;
+  facebookUrl?: string;
   companyName?: string;
 }): Promise<void> {
   const path = "site_settings/support";
@@ -538,7 +547,12 @@ export async function saveSupportSettings(settings: {
     id: "support",
     whatsappNumber: settings.whatsappNumber.trim().slice(0, 40),
     supportEmail: settings.supportEmail.trim().slice(0, 120),
-    companyName: (settings.companyName || DEFAULT_SUPPORT_SETTINGS.companyName).trim().slice(0, 80),
+    facebookUrl: (settings.facebookUrl || DEFAULT_SUPPORT_SETTINGS.facebookUrl)
+      .trim()
+      .slice(0, 300),
+    companyName: (settings.companyName || DEFAULT_SUPPORT_SETTINGS.companyName)
+      .trim()
+      .slice(0, 80),
     updatedAt: new Date().toISOString(),
   };
 

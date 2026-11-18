@@ -1081,6 +1081,25 @@ export default function AdminStudioPage() {
 
               <div className="space-y-1.5">
                 <label className="text-slate-300 font-medium block">
+                  Facebook Page URL
+                </label>
+                <input
+                  type="url"
+                  value={supportDraft.facebookUrl}
+                  onChange={(e) => {
+                    supportDirtyRef.current = true;
+                    setSupportDraft((prev) => ({
+                      ...prev,
+                      facebookUrl: e.target.value,
+                    }));
+                  }}
+                  placeholder="https://www.facebook.com/share/14yWEghicKi/"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-400"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-slate-300 font-medium block">
                   Software House / Developer Brand
                 </label>
                 <input

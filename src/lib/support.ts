@@ -2,6 +2,7 @@ export interface SupportSettings {
   id: string;
   whatsappNumber: string;
   supportEmail: string;
+  facebookUrl: string;
   companyName: string;
   updatedAt?: string;
 }
@@ -10,6 +11,7 @@ export const DEFAULT_SUPPORT_SETTINGS: SupportSettings = {
   id: "support",
   whatsappNumber: "+1 (401) 572-1696",
   supportEmail: "codeabm71@gmail.com",
+  facebookUrl: "https://www.facebook.com/share/14yWEghicKi/",
   companyName: "ABM CodeSpace",
 };
 

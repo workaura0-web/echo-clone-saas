@@ -163,10 +163,11 @@ service cloud.firestore {
 
     function isValidSiteSettings(data) {
       return data.keys().hasAll(['id', 'whatsappNumber', 'supportEmail', 'updatedAt']) &&
-        data.keys().hasOnly(['id', 'whatsappNumber', 'supportEmail', 'companyName', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'whatsappNumber', 'supportEmail', 'facebookUrl', 'companyName', 'updatedAt']) &&
         data.id is string && data.id.size() > 0 && data.id.size() <= 64 &&
         data.whatsappNumber is string && data.whatsappNumber.size() >= 7 && data.whatsappNumber.size() <= 40 &&
         data.supportEmail is string && data.supportEmail.size() >= 3 && data.supportEmail.size() <= 120 &&
+        (!('facebookUrl' in data) || (data.facebookUrl is string && data.facebookUrl.size() <= 300)) &&
         (!('companyName' in data) || (data.companyName is string && data.companyName.size() <= 80)) &&
         data.updatedAt is string && data.updatedAt.size() <= 64;
     }
